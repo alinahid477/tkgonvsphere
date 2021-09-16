@@ -7,6 +7,9 @@
 .azure
 .vmware-cna-saas
 
+.config
+.cache
+
 .kube-tkg
 .kube/*
 !.kube/.gitkeep

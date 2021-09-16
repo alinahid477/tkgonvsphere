@@ -24,25 +24,25 @@ RUN apt-get update && apt-get install -y \
 RUN curl -o /usr/local/bin/jq -L https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 && \
   	chmod +x /usr/local/bin/jq
 
-# ENV DOCKERVERSION=20.10.8
-# RUN curl -fsSLO https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKERVERSION}.tgz \
-#   && tar xzvf docker-${DOCKERVERSION}.tgz --strip 1 \
-#                  -C /usr/local/bin docker/docker \
-#   && rm docker-${DOCKERVERSION}.tgz
+ENV DOCKERVERSION=20.10.8
+RUN curl -fsSLO https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKERVERSION}.tgz \
+  && tar xzvf docker-${DOCKERVERSION}.tgz --strip 1 \
+                 -C /usr/local/bin docker/docker \
+  && rm docker-${DOCKERVERSION}.tgz
 
-# COPY binaries/tanzu-cli-bundle-linux-amd64.tar /tmp/
-# RUN cd /tmp && mkdir tanzu \
-# 	&& tar -xvf tanzu-cli-bundle-linux-amd64.tar -C tanzu/ \
-# 	&& cd /tmp/tanzu/cli \
-# 	&& install core/v1.3.1/tanzu-core-linux_amd64 /usr/local/bin/tanzu \
-# 	&& cd /tmp/tanzu \
-# 	&& tanzu plugin clean
+COPY binaries/tanzu-cli-bundle-linux-amd64.tar /tmp/
+RUN cd /tmp && mkdir tanzu \
+	&& tar -xvf tanzu-cli-bundle-linux-amd64.tar -C tanzu/ \
+	&& cd /tmp/tanzu/cli \
+	&& install core/v1.4.0/tanzu-core-linux_amd64 /usr/local/bin/tanzu \
+	&& cd /tmp/tanzu \
+	&& tanzu plugin clean
 
-# COPY binaries/init.sh /usr/local/init.sh
-# RUN chmod +x /usr/local/init.sh
+COPY binaries/init.sh /usr/local/init.sh
+RUN chmod +x /usr/local/init.sh
 
 # COPY binaries/tmc /usr/local/bin/
 # RUN chmod +x /usr/local/bin/tmc
 
 
-# ENTRYPOINT [ "/usr/local/init.sh"]
+ENTRYPOINT [ "/usr/local/init.sh"]
