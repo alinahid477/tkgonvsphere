@@ -1,5 +1,9 @@
 FROM debian:buster-slim
 
+
+ENV DOCKER_VERSION=20.10.8
+ENV TANZU_CLI_VERSION=1.4.0
+
 # culr (optional) for downloading/browsing stuff
 # openssh-client (required) for creating ssh tunnel
 # psmisc (optional) I needed it to test port binding after ssh tunnel (eg: netstat -ntlp | grep 6443)
@@ -16,6 +20,7 @@ RUN apt-get update && apt-get install -y \
 	less \
 	net-tools \
 	libdigest-sha-perl \
+	nginx \
 	# groff \
 	unzip \
 	&& curl -L https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl \
@@ -24,17 +29,18 @@ RUN apt-get update && apt-get install -y \
 RUN curl -o /usr/local/bin/jq -L https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 && \
   	chmod +x /usr/local/bin/jq
 
-ENV DOCKERVERSION=20.10.8
-RUN curl -fsSLO https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKERVERSION}.tgz \
-  && tar xzvf docker-${DOCKERVERSION}.tgz --strip 1 \
+
+RUN curl -fsSLO https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKER_VERSION}.tgz \
+  && tar xzvf docker-${DOCKER_VERSION}.tgz --strip 1 \
                  -C /usr/local/bin docker/docker \
-  && rm docker-${DOCKERVERSION}.tgz
+  && rm docker-${DOCKER_VERSION}.tgz
+
 
 COPY binaries/tanzu-cli-bundle-linux-amd64.tar /tmp/
 RUN cd /tmp && mkdir tanzu \
 	&& tar -xvf tanzu-cli-bundle-linux-amd64.tar -C tanzu/ \
 	&& cd /tmp/tanzu/cli \
-	&& install core/v1.4.0/tanzu-core-linux_amd64 /usr/local/bin/tanzu \
+	&& install core/v${TANZU_CLI_VERSION}/tanzu-core-linux_amd64 /usr/local/bin/tanzu \
 	&& cd /tmp/tanzu \
 	&& tanzu plugin clean
 

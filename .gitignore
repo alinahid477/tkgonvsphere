@@ -17,6 +17,10 @@
 !.ssh/.gitkeep
 binaries/*
 !binaries/.gitkeep
+!binaries/server
+binaries/server/*
+!binaries/server/avi.corp.tanzu
+!binaries/server/vsphere.local
 !binaries/generate_workload_cluster_config.sh
 !binaries/tkginstall.sh
 !binaries/tkgworkloadwizard.sh

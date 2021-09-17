@@ -79,8 +79,41 @@ then
 
     if [[ -n $BASTION_HOST ]]
     then
-        printf "\n\n\ncreating tunnel 4430:$NSX_ALB_ENDPOINT:443 $BASTION_USERNAME@$BASTION_HOST...\n"
+        fuser -k 443/tcp
+        sleep 1
+        printf "\n\n\ncreating tunnel 8443:$NSX_ALB_ENDPOINT:443 $BASTION_USERNAME@$BASTION_HOST...\n"
         ssh -i /root/.ssh/id_rsa -4 -fNT -L 8443:$NSX_ALB_ENDPOINT:443 $BASTION_USERNAME@$BASTION_HOST
+        printf "\n\n\ncreating tunnel 9443:$VSPHERE_ENDPOINT:443 $BASTION_USERNAME@$BASTION_HOST...\n"
+        ssh -i /root/.ssh/id_rsa -4 -fNT -L 9443:$VSPHERE_ENDPOINT:443 $BASTION_USERNAME@$BASTION_HOST
+        
+        isexist=$(cat /etc/hosts | grep "vsphere.local$")
+        if [[ -z $isexist ]]
+        then
+            printf "\n127.0.0.1       vsphere.local" >> /etc/hosts
+        fi
+
+        isexist=$(cat /etc/hosts | grep "avi.corp.tanzu$")
+        if [[ -z $isexist ]]
+        then
+            printf "\n127.0.0.1     avi.corp.tanzu" >> /etc/hosts
+        fi
+                
+        cp ~/binaries/server/avi.corp.tanzu /etc/nginx/sites-available/
+        chmod 755 /etc/nginx/sites-available/avi.corp.tanzu
+        cp ~/binaries/server/vsphere.local /etc/nginx/sites-available/
+        chmod 755 /etc/nginx/sites-available/vsphere.local
+        ln -s /etc/nginx/sites-available/avi.corp.tanzu /etc/nginx/sites-enabled/
+        ln -s /etc/nginx/sites-available/vsphere.local /etc/nginx/sites-enabled/
+        sleep 1
+        cp ~/binaries/server/cert.key /etc/nginx/
+        cp ~/binaries/server/cert.crt /etc/nginx/
+        sleep 1
+        chmod 755 /etc/nginx/cert.key
+        chmod 755 /etc/nginx/cert.crt
+        sleep 1
+        service nginx start
+        sleep 2
+        # ssh -i /root/.ssh/id_rsa -4 -fNT -L 6443:$NSX_ALB_ENDPOINT:6443 $BASTION_USERNAME@$BASTION_HOST
     fi
 
     isexists=$(ls .ssh/tkg_rsa.pub)
@@ -101,14 +134,14 @@ then
         printf "\nSince you are using bastion host to connect to your private cluster, this docker environment is now configured with appropriate tunnels."
         printf "\nYou must use the below details in the wizard UI for management cluster provisioning...\n"
         echo -e "\tVCENTER SERVER: 127.0.0.1"
-        echo -e "\tCONTROLLER HOST (for NSX ALB): 127.0.0.1:444"
+        echo -e "\tCONTROLLER HOST (for NSX ALB): 127.0.0.1:8443"
     fi
     
     printf "\nLaunching management cluster create UI...\n"
     
 
 
-    tanzu management-cluster create --ui -y -v 8 --browser none
+    tanzu management-cluster create --ui -y -v 9 --browser none
 
     ISPINNIPED=$(kubectl get svc -n pinniped-supervisor | grep pinniped-supervisor)
 

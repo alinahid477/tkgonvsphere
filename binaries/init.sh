@@ -3,7 +3,7 @@
 install_tanzu_plugin()
 {
     printf "\nChecking tanzu unpacked...\n\n"
-    isexists=$(ls /tmp | grep -w "tanzu$")
+    isexists=$(ls /tmp/tanzu | grep -w "cli$")
     if [[ -z $isexists ]]
     then
         printf "\nChecking tanzu cli bundle in ~/binaries...\n"
@@ -21,7 +21,7 @@ install_tanzu_plugin()
         cd ~
     fi
     cd ~
-    tanzu plugin install --local ~/tmp/tanzu/cli all
+    tanzu plugin install --local /tmp/tanzu/cli all
 }
 
 
@@ -128,8 +128,8 @@ if [[ -n $BASTION_HOST ]]
 then
     printf "\ncreating tunnel...\n"
     ssh -i /root/.ssh/id_rsa -4 -fNT -L 443:$VSPHERE_ENDPOINT:443 $BASTION_USERNAME@$BASTION_HOST
-    ssh -i /root/.ssh/id_rsa -4 -fNT -L 6443:$VSPHERE_ENDPOINT:6443 $BASTION_USERNAME@$BASTION_HOST
-    vsphereHost=localhost
+    # ssh -i /root/.ssh/id_rsa -4 -fNT -L 6443:$VSPHERE_ENDPOINT:6443 $BASTION_USERNAME@$BASTION_HOST
+    vsphereHost=127.0.0.1
 fi
 
 
