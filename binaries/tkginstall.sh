@@ -12,7 +12,20 @@ returnOrexit()
     fi
 }
 
+unset COMPLETE
+unset BASTION_HOST
+unset BASTION_USERNAME
+unset VSPHERE_ENDPOINT
+unset VSPHERE_USERNAME
+unset VSPHERE_PASSWORD
+unset TKG_ADMIN_EMAIL
+unset NSX_ALB_ENDPOINT
+unset CONTROL_PLANE_ENDPOINT
+
+
 export $(cat /root/.env | xargs)
+
+
 
 printf "\n***************************************************"
 printf "\n********** Starting *******************************"
@@ -77,36 +90,103 @@ then
         export $(cat /root/.env | xargs)
     done
 
+
+    while [[ -n $BASTION_HOST && -z $CONTROL_PLANE_ENDPOINT ]]; do
+        printf "\nSince we're tunneling here we need to create a tunnel for 6443 to connect to CONTROL_PLANE_ENDPOINT."
+        printf "\nCONTROL_PLANE_ENDPOINT not set in the .env file."
+        printf "\nPlease add CONTROL_PLANE_ENDPOINT={ip address} in the .env file"
+        printf "\nReplace {ip address} with the ip address of the CONTROL PLANE IP address of the management cluster"
+        printf "\n"
+        if [[ $SILENTMODE == 'y' ]]
+        then
+            returnOrexit
+        fi
+        isexists=$(cat /root/.env | grep -w CONTROL_PLANE_ENDPOINT)
+        if [[ -z $isexists ]]
+        then
+            printf "\nCONTROL_PLANE_ENDPOINT=" >> /root/.env
+        fi
+        while true; do
+            read -p "Confirm to continue? [y/n] " yn
+            case $yn in
+                [Yy]* ) printf "\nyou confirmed yes\n"; break;;
+                [Nn]* ) printf "\n\nYou said no. \n\nQuiting...\n\n"; returnOrexit;;
+                * ) echo "Please answer yes or no.";;
+            esac
+        done
+        export $(cat /root/.env | xargs)
+    done
+
     if [[ -n $BASTION_HOST ]]
     then
+        # printf "\n\n\nAdding nameserver..."
+        # isexist=$(cat /etc/resolv.conf | grep '^nameserver 127.0.0.1$')
+        # if [[ -z $isexist ]]
+        # then
+        #     # sed -i '/^nameserver.*/i nameserver 127.0.0.1' /etc/resolv.conf
+        #     printf "nameserver 127.0.0.1" >> /etc/resolvconf/resolv.conf.d/head
+        # fi
+        # printf "\nDONE."
+
         fuser -k 443/tcp
         sleep 1
         printf "\n\n\ncreating tunnel 8443:$NSX_ALB_ENDPOINT:443 $BASTION_USERNAME@$BASTION_HOST...\n"
         ssh -i /root/.ssh/id_rsa -4 -fNT -L 8443:$NSX_ALB_ENDPOINT:443 $BASTION_USERNAME@$BASTION_HOST
+        printf "DONE."
         printf "\n\n\ncreating tunnel 9443:$VSPHERE_ENDPOINT:443 $BASTION_USERNAME@$BASTION_HOST...\n"
         ssh -i /root/.ssh/id_rsa -4 -fNT -L 9443:$VSPHERE_ENDPOINT:443 $BASTION_USERNAME@$BASTION_HOST
-        
+        printf "\nDONE."
+        printf "\n\n\ncreating tunnel 6443:$CONTROL_PLANE_ENDPOINT:6443 $BASTION_USERNAME@$BASTION_HOST...\n"
+        ssh -i /root/.ssh/id_rsa -4 -fNT -L 6443:$CONTROL_PLANE_ENDPOINT:6443 $BASTION_USERNAME@$BASTION_HOST
+        printf "\nDONE."
+        # printf "\n\n\ncreating tunnel 53:$DNS_SERVER_ENDPOINT:53 $BASTION_USERNAME@$BASTION_HOST...\n"
+        # ssh -i /root/.ssh/id_rsa -4 -fNT -L 53:$DNS_SERVER_ENDPOINT:53 $BASTION_USERNAME@$BASTION_HOST
+        # printf "\nDONE."
+
         isexist=$(cat /etc/hosts | grep "vsphere.local$")
         if [[ -z $isexist ]]
         then
+            printf "\nMapping to vsphere.local..."
             printf "\n127.0.0.1       vsphere.local" >> /etc/hosts
         fi
 
-        isexist=$(cat /etc/hosts | grep "avi.corp.tanzu$")
+        isexist=$(cat /etc/hosts | grep "nsxalb.local$")
         if [[ -z $isexist ]]
         then
-            printf "\n127.0.0.1     avi.corp.tanzu" >> /etc/hosts
+            printf "\nMapping to nsxalb.local..."
+            printf "\n127.0.0.1     nsxalb.local" >> /etc/hosts
         fi
-                
-        cp ~/binaries/server/avi.corp.tanzu /etc/nginx/sites-available/
-        chmod 755 /etc/nginx/sites-available/avi.corp.tanzu
-        cp ~/binaries/server/vsphere.local /etc/nginx/sites-available/
-        chmod 755 /etc/nginx/sites-available/vsphere.local
-        ln -s /etc/nginx/sites-available/avi.corp.tanzu /etc/nginx/sites-enabled/
-        ln -s /etc/nginx/sites-available/vsphere.local /etc/nginx/sites-enabled/
+
+        isexist=$(cat /etc/hosts | grep "kubevip.local$")
+        if [[ -z $isexist ]]
+        then
+            printf "\n127.0.0.1     kubevip.local" >> /etc/hosts
+        fi
+        
+        printf "\nremoving default...\n"
+        rm /etc/nginx/sites-available/default
+        rm /etc/nginx/sites-enabled/default
         sleep 1
-        cp ~/binaries/server/cert.key /etc/nginx/
-        cp ~/binaries/server/cert.crt /etc/nginx/
+
+        printf "\nAdding custom default...\n"
+        cp ~/binaries/dns/default /etc/nginx/sites-available/
+        chmod 755 /etc/nginx/sites-available/default
+        ln -s /etc/nginx/sites-available/default /etc/nginx/sites-enabled/
+        sleep 1
+
+        printf "\nAdding others...\n"
+        cp ~/binaries/dns/nsxalb.local /etc/nginx/sites-available/
+        chmod 755 /etc/nginx/sites-available/nsxalb.local
+        cp ~/binaries/dns/vsphere.local /etc/nginx/sites-available/
+        chmod 755 /etc/nginx/sites-available/vsphere.local
+        cp ~/binaries/dns/kubevip.local /etc/nginx/sites-available/
+        chmod 755 /etc/nginx/sites-available/kubevip.local
+        ln -s /etc/nginx/sites-available/nsxalb.local /etc/nginx/sites-enabled/
+        ln -s /etc/nginx/sites-available/vsphere.local /etc/nginx/sites-enabled/
+        ln -s /etc/nginx/sites-available/kubevip.local /etc/nginx/sites-enabled/
+        sleep 1
+        cp ~/binaries/dns/cert.key /etc/nginx/
+        cp ~/binaries/dns/cert.crt /etc/nginx/
         sleep 1
         chmod 755 /etc/nginx/cert.key
         chmod 755 /etc/nginx/cert.crt
@@ -115,6 +195,17 @@ then
         sleep 2
         # ssh -i /root/.ssh/id_rsa -4 -fNT -L 6443:$NSX_ALB_ENDPOINT:6443 $BASTION_USERNAME@$BASTION_HOST
     fi
+
+
+    # while true; do
+    #     read -p "Confirm to continue? [y/n] " yn
+    #     case $yn in
+    #         [Yy]* ) printf "\nyou confirmed yes\n"; break;;
+    #         [Nn]* ) printf "\n\nYou said no. \n\nQuiting...\n\n"; returnOrexit;;
+    #         * ) echo "Please answer yes or no.";;
+    #     esac
+    # done
+
 
     isexists=$(ls .ssh/tkg_rsa.pub)
     if [[ -z $isexists ]]
@@ -133,15 +224,17 @@ then
     then
         printf "\nSince you are using bastion host to connect to your private cluster, this docker environment is now configured with appropriate tunnels."
         printf "\nYou must use the below details in the wizard UI for management cluster provisioning...\n"
-        echo -e "\tVCENTER SERVER: 127.0.0.1"
-        echo -e "\tCONTROLLER HOST (for NSX ALB): 127.0.0.1:8443"
+        echo -e "\tVCENTER SERVER: vsphere.local"
+        # echo -e "\tCONTROL PLANE ENDPOINT (for NSX ALB): kubevip.local"
+        echo -e "\tNSX ALB CONTROLLER HOST (for NSX ALB): nsxalb.local"
     fi
     
     printf "\nLaunching management cluster create UI...\n"
     
 
 
-    tanzu management-cluster create --ui -y -v 9 --browser none
+    tanzu management-cluster create --ui -y -v 9 --browser none 
+    # --bind 100.64.0.2:8080
 
     ISPINNIPED=$(kubectl get svc -n pinniped-supervisor | grep pinniped-supervisor)
 

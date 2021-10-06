@@ -2,6 +2,7 @@
 *.nogit*
 .bash_history
 *.crt
+*.key
 .tanzu
 .local
 .azure
@@ -17,10 +18,7 @@
 !.ssh/.gitkeep
 binaries/*
 !binaries/.gitkeep
-!binaries/server
-binaries/server/*
-!binaries/server/avi.corp.tanzu
-!binaries/server/vsphere.local
+!binaries/dns
 !binaries/generate_workload_cluster_config.sh
 !binaries/tkginstall.sh
 !binaries/tkgworkloadwizard.sh

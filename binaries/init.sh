@@ -1,5 +1,5 @@
 #!/bin/bash
-
+/etc/init.d/bind9 start
 install_tanzu_plugin()
 {
     printf "\nChecking tanzu unpacked...\n\n"
@@ -61,7 +61,7 @@ fi
 printf "\nChecking Tanzu plugin...\n"
 
 ISINSTALLED=$(tanzu management-cluster --help)
-if [[ $ISINSTALLED == *"unknown"* ]]
+if [[ $ISINSTALLED == *@("unknown"|"does not exist")* ]]
 then
     printf "\n\ntanzu plugin management-cluster not found. installing...\n\n"
     install_tanzu_plugin
@@ -69,7 +69,7 @@ then
 fi
 
 ISINSTALLED=$(tanzu cluster --help)
-if [[ $ISINSTALLED == *"unknown"* ]]
+if [[ $ISINSTALLED == *@("unknown"|"does not exist")* ]]
 then
     printf "\n\ntanzu plugin cluster not found. installing...\n"
     install_tanzu_plugin
@@ -77,7 +77,7 @@ then
 fi
 
 ISINSTALLED=$(tanzu login --help)
-if [[ $ISINSTALLED == *"unknown"* ]]
+if [[ $ISINSTALLED == *@("unknown"|"does not exist")* ]]
 then
     printf "\n\ntanzu plugin login not found. installing...\n"
     install_tanzu_plugin
@@ -85,7 +85,7 @@ then
 fi
 
 ISINSTALLED=$(tanzu kubernetes-release --help)
-if [[ $ISINSTALLED == *"unknown"* ]]
+if [[ $ISINSTALLED == *@("unknown"|"does not exist")* ]]
 then
     printf "\n\ntanzu plugin kubernetes-release not found. installing...\n"
     install_tanzu_plugin
@@ -93,7 +93,7 @@ then
 fi
 
 ISINSTALLED=$(tanzu pinniped-auth --help)
-if [[ $ISINSTALLED == *"unknown"* ]]
+if [[ $ISINSTALLED == *@("unknown"|"does not exist")* ]]
 then
     printf "\n\ntanzu plugin pinniped-auth not found. installing...\n"
     install_tanzu_plugin
@@ -147,7 +147,6 @@ then
     printf "\n\n\nFailed access check to $VSPHERE_ENDPOINT for user $VSPHERE_USERNAME.\nFix .env variables and try again.\nExit...\n"
     exit 1
 fi
-
 
 printf "\nYour available wizards are:\n"
 echo -e "\t~/binaries/tkginstall.sh"

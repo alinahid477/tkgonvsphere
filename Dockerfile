@@ -19,9 +19,10 @@ RUN apt-get update && apt-get install -y \
 	nano \
 	less \
 	net-tools \
-	libdigest-sha-perl \
 	nginx \
-	# groff \
+	inetutils-traceroute \
+	dnsutils \
+	iputils-ping \
 	unzip \
 	&& curl -L https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl \
 	&& chmod +x /usr/local/bin/kubectl
@@ -49,6 +50,7 @@ RUN chmod +x /usr/local/init.sh
 
 # COPY binaries/tmc /usr/local/bin/
 # RUN chmod +x /usr/local/bin/tmc
+
 
 
 ENTRYPOINT [ "/usr/local/init.sh"]
