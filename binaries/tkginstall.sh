@@ -20,6 +20,7 @@ unset VSPHERE_USERNAME
 unset VSPHERE_PASSWORD
 unset TKG_ADMIN_EMAIL
 unset NSX_ALB_ENDPOINT
+unset NSX_ALB_DOMAIN_NAME
 unset CONTROL_PLANE_ENDPOINT
 
 
@@ -78,6 +79,31 @@ then
         if [[ -z $isexists ]]
         then
             printf "\nNSX_ALB_ENDPOINT=" >> /root/.env
+        fi
+        while true; do
+            read -p "Confirm to continue? [y/n] " yn
+            case $yn in
+                [Yy]* ) printf "\nyou confirmed yes\n"; break;;
+                [Nn]* ) printf "\n\nYou said no. \n\nQuiting...\n\n"; returnOrexit;;
+                * ) echo "Please answer yes or no.";;
+            esac
+        done
+        export $(cat /root/.env | xargs)
+    done
+
+    while [[ -n $BASTION_HOST && -z $NSX_ALB_DOMAIN_NAME ]]; do
+        printf "\nNSX_ALB_DOMAIN_NAME not set in the .env file."
+        printf "\nPlease add NSX_ALB_DOMAIN_NAME={your.nsxalb.domain.name} in the .env file"
+        printf "\nReplace {your.nsxalb.domain.name} with the domain name of the NSX ALB Contoller"
+        printf "\n"
+        if [[ $SILENTMODE == 'y' ]]
+        then
+            returnOrexit
+        fi
+        isexists=$(cat /root/.env | grep -w NSX_ALB_DOMAIN_NAME)
+        if [[ -z $isexists ]]
+        then
+            printf "\nNSX_ALB_DOMAIN_NAME=" >> /root/.env
         fi
         while true; do
             read -p "Confirm to continue? [y/n] " yn
@@ -150,11 +176,14 @@ then
             printf "\n127.0.0.1       vsphere.local" >> /etc/hosts
         fi
 
-        isexist=$(cat /etc/hosts | grep "nsxalb.local$")
+        printf "\nCreating host file according to NSX_ALB_DOMAIN_NAME $NSX_ALB_DOMAIN_NAME"
+        awk -v old="nsxalb.local" -v new="$NSX_ALB_DOMAIN_NAME" 's=index($0,old){$0=substr($0,1,s-1) new substr($0,s+length(old))} 1' binaries/dns/nsxalb.local > binaries/dns/$NSX_ALB_DOMAIN_NAME
+
+        isexist=$(cat /etc/hosts | grep "$NSX_ALB_DOMAIN_NAME$")
         if [[ -z $isexist ]]
         then
-            printf "\nMapping to nsxalb.local..."
-            printf "\n127.0.0.1     nsxalb.local" >> /etc/hosts
+            printf "\nMapping to $NSX_ALB_DOMAIN_NAME..."
+            printf "\n127.0.0.1     $NSX_ALB_DOMAIN_NAME" >> /etc/hosts
         fi
 
         isexist=$(cat /etc/hosts | grep "kubevip.local$")
@@ -175,13 +204,13 @@ then
         sleep 1
 
         printf "\nAdding others...\n"
-        cp ~/binaries/dns/nsxalb.local /etc/nginx/sites-available/
-        chmod 755 /etc/nginx/sites-available/nsxalb.local
+        cp ~/binaries/dns/$NSX_ALB_DOMAIN_NAME /etc/nginx/sites-available/
+        chmod 755 /etc/nginx/sites-available/$NSX_ALB_DOMAIN_NAME
         cp ~/binaries/dns/vsphere.local /etc/nginx/sites-available/
         chmod 755 /etc/nginx/sites-available/vsphere.local
         cp ~/binaries/dns/kubevip.local /etc/nginx/sites-available/
         chmod 755 /etc/nginx/sites-available/kubevip.local
-        ln -s /etc/nginx/sites-available/nsxalb.local /etc/nginx/sites-enabled/
+        ln -s /etc/nginx/sites-available/$NSX_ALB_DOMAIN_NAME /etc/nginx/sites-enabled/
         ln -s /etc/nginx/sites-available/vsphere.local /etc/nginx/sites-enabled/
         ln -s /etc/nginx/sites-available/kubevip.local /etc/nginx/sites-enabled/
         sleep 1
@@ -226,12 +255,16 @@ then
         printf "\nYou must use the below details in the wizard UI for management cluster provisioning...\n"
         echo -e "\tVCENTER SERVER: vsphere.local"
         # echo -e "\tCONTROL PLANE ENDPOINT (for NSX ALB): kubevip.local"
-        echo -e "\tNSX ALB CONTROLLER HOST (for NSX ALB): nsxalb.local"
-    fi
-    
-    printf "\nLaunching management cluster create UI...\n"
+        echo -e "\tNSX ALB CONTROLLER HOST (for NSX ALB): $NSX_ALB_DOMAIN_NAME"
+
+        printf "\nLaunching DNS adjust...\n"
+        cd /root/binaries
+        ./adjustdns.sh &
+        cd ~
+    fi  
     
 
+    printf "\nLaunching management cluster create UI...\n"
 
     tanzu management-cluster create --ui -y -v 9 --browser none 
     # --bind 100.64.0.2:8080

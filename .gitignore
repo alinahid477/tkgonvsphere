@@ -4,9 +4,11 @@
 *.crt
 *.key
 .tanzu
+*.log
 .local
 .azure
 .vmware-cna-saas
+*.tanzu
 
 .config
 .cache
@@ -22,6 +24,7 @@ binaries/*
 !binaries/generate_workload_cluster_config.sh
 !binaries/tkginstall.sh
 !binaries/tkgworkloadwizard.sh
+!binaries/adjustdns.sh
 !binaries/attach_to_tmc.sh
 !binaries/init.sh
 workload-clusters/*

@@ -19,3 +19,5 @@ kubectl -n kube-system rollout restart deployment coredns
 
 kubectl get nodes -o jsonpath='{ $.items[0].status.addresses[?(@.type=="InternalIP")].address }' | awk -F"." '{print $1"."$2"."$3".1"}'
 kubectl rollout status deployments coredns -n kube-system | grep success
+
+https://stackoverflow.com/questions/54091002/docker-how-to-redirect-a-ip-within-a-container-to-another-ip

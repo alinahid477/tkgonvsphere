@@ -1,5 +1,4 @@
 #!/bin/bash
-/etc/init.d/bind9 start
 install_tanzu_plugin()
 {
     printf "\nChecking tanzu unpacked...\n\n"
