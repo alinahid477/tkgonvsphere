@@ -18,6 +18,7 @@
 !.kube/.gitkeep
 .ssh/*
 !.ssh/.gitkeep
+!.ssh/sshuttleconfig
 binaries/*
 !binaries/.gitkeep
 !binaries/dns

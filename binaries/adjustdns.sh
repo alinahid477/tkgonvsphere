@@ -81,21 +81,29 @@ sleep 3
 kubectl -n kube-system rollout restart deployment coredns --kubeconfig=$kubeconfig
 sleep 3
 
-service nginx stop
-sleep 2
+# service nginx stop
+# sleep 2
 
-fuser -k 443/tcp
-sleep 1
+# fuser -k 443/tcp
+# sleep 1
 
-printf "\n\n\ncreating tunnel 443:$NSX_ALB_ENDPOINT:443 $BASTION_USERNAME@$BASTION_HOST...\n"
-ssh -i /root/.ssh/id_rsa -4 -fNT -L $VM_LOCAL_IP:443:$NSX_ALB_ENDPOINT:443 $BASTION_USERNAME@$BASTION_HOST
+# printf "\n\n\ncreating tunnel 443:$NSX_ALB_ENDPOINT:443 $BASTION_USERNAME@$BASTION_HOST...\n"
+# ssh -i /root/.ssh/id_rsa -4 -fNT -L $VM_LOCAL_IP:443:$NSX_ALB_ENDPOINT:443 $BASTION_USERNAME@$BASTION_HOST
 
-sleep 30
+sleep 90
 
 printf "\n\n\n\n"
 
 printf "\nChecking ako status...\n"
 akostatus=$(kubectl get pods -n avi-system ako-0 -o jsonpath="{.status.phase}" --kubeconfig=$kubeconfig)
+count=1
+while [[ $akostatus != "Running" && $count -lt 60 ]]; do
+    printf "\nako status: $akostatus. Retrying in 30s..."
+    sleep 30
+    akostatus=$(kubectl get pods -n avi-system ako-0 -o jsonpath="{.status.phase}" --kubeconfig=$kubeconfig)
+    ((count=count+1))
+done
+printf "\n\n"
 kubectl get pods -n avi-system --kubeconfig=$kubeconfig
 
 printf "\nDONE.\n"

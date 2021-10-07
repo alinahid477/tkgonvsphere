@@ -21,3 +21,5 @@ kubectl get nodes -o jsonpath='{ $.items[0].status.addresses[?(@.type=="Internal
 kubectl rollout status deployments coredns -n kube-system | grep success
 
 https://stackoverflow.com/questions/54091002/docker-how-to-redirect-a-ip-within-a-container-to-another-ip
+
+sshuttle -D -r ubuntu@10.79.156.23 192.168.0.0/16
