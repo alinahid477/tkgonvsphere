@@ -121,13 +121,13 @@ done
 
 export $(cat /root/.env | xargs)
 
-vsphereHost=$VSPHERE_ENDPOINT
+vsphereHost=$VSPHERE_IP
 
 if [[ -n $BASTION_HOST ]]
 then
     printf "\ncreating tunnel...\n"
-    ssh -i /root/.ssh/id_rsa -4 -fNT -L 443:$VSPHERE_ENDPOINT:443 $BASTION_USERNAME@$BASTION_HOST
-    # ssh -i /root/.ssh/id_rsa -4 -fNT -L 6443:$VSPHERE_ENDPOINT:6443 $BASTION_USERNAME@$BASTION_HOST
+    ssh -i /root/.ssh/id_rsa -4 -fNT -L 443:$VSPHERE_IP:443 $BASTION_USERNAME@$BASTION_HOST
+    # ssh -i /root/.ssh/id_rsa -4 -fNT -L 6443:$VSPHERE_IP:6443 $BASTION_USERNAME@$BASTION_HOST
     vsphereHost=127.0.0.1
 fi
 
@@ -143,8 +143,11 @@ test=$(echo $test | jq -c '.value' | tr -d '"')
 echo $test
 if [ -z "$test" ]
 then
-    printf "\n\n\nFailed access check to $VSPHERE_ENDPOINT for user $VSPHERE_USERNAME.\nFix .env variables and try again.\nExit...\n"
+    printf "\n\n\nFailed access check to $VSPHERE_IP for user $VSPHERE_USERNAME.\nFix .env variables and try again.\nExit...\n"
     exit 1
+else
+    printf "\nAccess Confirmed.\n"
+    fuser -k 443/tcp
 fi
 
 printf "\nYour available wizards are:\n"

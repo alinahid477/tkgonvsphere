@@ -21,7 +21,8 @@ data:
         reload
         loadbalance
         hosts {
-           VM_LOCAL_IP nsxalb.local
+           NSX_ALB_IP nsxalb.local
+           VSPHERE_IP vsphere.local
            fallthrough
         }
     }

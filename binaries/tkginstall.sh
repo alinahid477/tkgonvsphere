@@ -22,11 +22,11 @@ returnOrexit()
 unset COMPLETE
 unset BASTION_HOST
 unset BASTION_USERNAME
-unset VSPHERE_ENDPOINT
+unset VSPHERE_IP
 unset VSPHERE_USERNAME
 unset VSPHERE_PASSWORD
 unset TKG_ADMIN_EMAIL
-unset NSX_ALB_ENDPOINT
+unset NSX_ALB_IP
 unset NSX_ALB_DOMAIN_NAME
 
 export $(cat /root/.env | xargs)
@@ -69,18 +69,41 @@ then
         export $(cat /root/.env | xargs)
     done
 
+    while [[ -n $BASTION_HOST && -z $VSPHERE_DOMAIN_NAME ]]; do
+        printf "\nVSPHERE_DOMAIN_NAME not set in the .env file."
+        printf "\nPlease add VSPHERE_DOMAIN_NAME={domain.name} in the .env file"
+        printf "\nReplace {domain.name} with the domain name of the VSPHERE Contoller"
+        printf "\n"
+        if [[ $SILENTMODE == 'y' ]]
+        then
+            returnOrexit
+        fi
+        isexists=$(cat /root/.env | grep -w VSPHERE_DOMAIN_NAME)
+        if [[ -z $isexists ]]
+        then
+            printf "\nVSPHERE_DOMAIN_NAME=" >> /root/.env
+        fi
+        while true; do
+            read -p "Confirm to continue? [y/n] " yn
+            case $yn in
+                [Yy]* ) printf "\nyou confirmed yes\n"; break;;
+                [Nn]* ) printf "\n\nYou said no. \n\nQuiting...\n\n"; returnOrexit;;
+                * ) echo "Please answer yes or no.";;
+            esac
+        done
+        export $(cat /root/.env | xargs)
+    done
 
-
-    while [[ -n $BASTION_HOST && -z $NSX_ALB_ENDPOINT ]]; do
+    while [[ -n $BASTION_HOST && -z $NSX_ALB_IP ]]; do
         printf "\nNSX_ALB_ENDPOINT not set in the .env file."
-        printf "\nPlease add NSX_ALB_ENDPOINT={ip address} in the .env file"
+        printf "\nPlease add NSX_ALB_IP={ip address} in the .env file"
         printf "\nReplace {ip address} with the ip address of the NSX ALB Contoller IP address"
         printf "\n"
         if [[ $SILENTMODE == 'y' ]]
         then
             returnOrexit
         fi
-        isexists=$(cat /root/.env | grep -w NSX_ALB_ENDPOINT)
+        isexists=$(cat /root/.env | grep -w NSX_ALB_IP)
         if [[ -z $isexists ]]
         then
             printf "\nNSX_ALB_ENDPOINT=" >> /root/.env
@@ -169,7 +192,7 @@ then
             EXCLUDE_DOCKER_IP=''
         fi
         
-        NSX_ALB_SUBNET_IP=$(echo $NSX_ALB_ENDPOINT | awk -F"." '{print $1"."$2"."$3".0"}')
+        NSX_ALB_SUBNET_IP=$(echo $NSX_ALB_IP | awk -F"." '{print $1"."$2"."$3".0"}')
         NSX_ALB_SUBNET=$NSX_ALB_SUBNET_IP/24
 
         DNS_SERVER_SUBNET=''
@@ -179,14 +202,14 @@ then
             DNS_SERVER_SUBNET=$DNS_SERVER_SUBNET_IP/24
         fi
 
-        VSPHERE_SUBNET_IP=$(echo $VSPHERE_ENDPOINT | awk -F"." '{print $1"."$2"."$3".0"}')
+        VSPHERE_SUBNET_IP=$(echo $VSPHERE_IP | awk -F"." '{print $1"."$2"."$3".0"}')
         if [[ $VSPHERE_SUBNET_IP != $NSX_ALB_SUBNET_IP && $VSPHERE_SUBNET_IP != $DNS_SERVER_SUBNET_IP ]]
         then
             VSPHERE_SUBNET_IP=$VSPHERE_SUBNET/24
         fi
         
 
-        sshuttle --python python2 -D -r $BASTION_USERNAME@$BASTION_HOST $K8S_VIP_SUBNET $NSX_ALB_SUBNET $DNS_SERVER_SUBNET $VSPHERE_SUBNET --dns --disable-ipv6 -x 127.0.0.1/24 $EXCLUDE_DOCKER_IP
+        sshuttle --dns --python python2 -D -r $BASTION_USERNAME@$BASTION_HOST $K8S_VIP_SUBNET $NSX_ALB_SUBNET $DNS_SERVER_SUBNET $VSPHERE_SUBNET --disable-ipv6 -x 127.0.0.1/24 $EXCLUDE_DOCKER_IP -v
         
         sleep 3
 
@@ -199,10 +222,10 @@ then
             esac
         done
 
-        # printf "\nLaunching CoreDNS adjust...\n"
-        # cd /root/binaries
-        # ./adjustdns.sh &
-        # cd ~
+        printf "\nLaunching CoreDNS adjust...\n"
+        cd /root/binaries
+        ./adjustdns.sh &
+        cd ~
 
         printf "\n=> DONE."
 
@@ -225,9 +248,15 @@ then
     printf "\n\n\n Here's your public key in ~/.ssh/tkg_rsa.pub:\n"
     cat ~/.ssh/tkg_rsa.pub   
 
-    printf "\nLaunching management cluster create UI...\n"
-
-    tanzu management-cluster create --ui -y -v 9 --browser none 
+    if [[ -n $MANAGEMENT_CLUSTER_CONFIG_FILE ]]
+    then
+        printf "\nLaunching management cluster create using $MANAGEMENT_CLUSTER_CONFIG_FILE...\n"
+        tanzu management-cluster create --file $MANAGEMENT_CLUSTER_CONFIG_FILE -v 9
+    else
+        printf "\nLaunching management cluster create using UI...\n"
+        tanzu management-cluster create --ui -y -v 9 --browser none
+    fi
+    
     # --bind 100.64.0.2:8080
 
     ISPINNIPED=$(kubectl get svc -n pinniped-supervisor | grep pinniped-supervisor)
