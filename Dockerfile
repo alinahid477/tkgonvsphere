@@ -5,6 +5,7 @@ ENV DOCKER_VERSION=20.10.8
 ENV TANZU_CLI_VERSION=1.4.0
 
 # culr (optional) for downloading/browsing stuff
+# procps for ps aux to remove sshuttle background process as part of clean up
 # openssh-client (required) for creating ssh tunnel
 # psmisc (optional) I needed it to test port binding after ssh tunnel (eg: netstat -ntlp | grep 6443)
 # nano (required) buster-slim doesn't even have less. so I needed an editor to view/edit file (eg: /etc/hosts) 
@@ -19,6 +20,7 @@ RUN apt-get update && apt-get install -y \
 	apt-transport-https \
 	ca-certificates \
 	curl \
+	procps \
     openssh-client \
 	psmisc \
 	nano \

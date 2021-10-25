@@ -34,5 +34,6 @@ binaries/*
 !binaries/bastionhostinit.sh
 !binaries/bastionhostrun.sh
 !binaries/bastionhostsetup.sh
+!binaries/bastionhostcleanup.sh
 workload-clusters/*
 !workload-clusters/.gitkeep

@@ -15,20 +15,23 @@ ENV TANZU_CLI_VERSION=1.4.0
 # nc (netcat) and socat - same but with no proxy authentication;
 # sshuttle - "vpn" solution, route TCP traffic through ssh connection;
 # sshpass - ssh password authentication (octopus does not accept ssh keys)
-# RUN apt-get update && apt-get install -y \
-# 	unzip \
-# 	&& curl -L https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl \
-# 	&& chmod +x /usr/local/bin/kubectl
+RUN apt-get update && apt-get install -y \
+	apt-transport-https \
+	ca-certificates \
+	curl \
+	unzip \
+	&& curl -L https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl \
+	&& chmod +x /usr/local/bin/kubectl
 
 
 # RUN curl -o /usr/local/bin/jq -L https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 && \
 #   	chmod +x /usr/local/bin/jq
 
 
-# RUN curl -fsSLO https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKER_VERSION}.tgz \
-#   && tar xzvf docker-${DOCKER_VERSION}.tgz --strip 1 \
-#                  -C /usr/local/bin docker/docker \
-#   && rm docker-${DOCKER_VERSION}.tgz
+RUN curl -fsSLO https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKER_VERSION}.tgz \
+  && tar xzvf docker-${DOCKER_VERSION}.tgz --strip 1 \
+                 -C /usr/local/bin docker/docker \
+  && rm docker-${DOCKER_VERSION}.tgz
 
 
 COPY binaries/tanzu-cli-bundle-linux-amd64.tar /tmp/

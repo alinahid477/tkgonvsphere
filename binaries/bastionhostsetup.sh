@@ -69,9 +69,9 @@ export DOCKER_CONTEXT='bastionhostdocker'
 printf "\nChecking remote context...\n"
 docker ps
 
-# printf "\nStarting sshuttle...\n"
-# sshuttle --dns --python python2 -D -r $BASTION_USERNAME@$BASTION_HOST 0/0 --disable-ipv6 --listen 0.0.0.0:0
-
 printf "\nStarting tanzu in remote context...\n"
-docker exec -it merlintkgonvsphere bash -c "cd ~ ; tanzu management-cluster create --ui -y -v 9 --browser none"
+docker exec -idt merlintkgonvsphere bash -c "cd ~ ; tanzu management-cluster create --ui -y -v 9 --browser none"
+
+printf "\nStarting sshuttle...\n"
+sshuttle --dns --python python2 -D -r $BASTION_USERNAME@$BASTION_HOST 0/0 --disable-ipv6 --listen 0.0.0.0:0
 
