@@ -22,15 +22,9 @@ returnOrexit()
 unset COMPLETE
 unset BASTION_HOST
 unset BASTION_USERNAME
-unset VSPHERE_IP
-unset VSPHERE_USERNAME
-unset VSPHERE_PASSWORD
-unset TKG_ADMIN_EMAIL
-unset NSX_ALB_IP
-unset NSX_ALB_DOMAIN_NAME
+
 
 export $(cat /root/.env | xargs)
-
 
 
 printf "\n***************************************************"
@@ -69,107 +63,23 @@ then
         export $(cat /root/.env | xargs)
     done
 
-    while [[ -n $BASTION_HOST && -z $VSPHERE_DOMAIN_NAME ]]; do
-        printf "\nVSPHERE_DOMAIN_NAME not set in the .env file."
-        printf "\nPlease add VSPHERE_DOMAIN_NAME={domain.name} in the .env file"
-        printf "\nReplace {domain.name} with the domain name of the VSPHERE Contoller"
-        printf "\n"
-        if [[ $SILENTMODE == 'y' ]]
-        then
-            returnOrexit
-        fi
-        isexists=$(cat /root/.env | grep -w VSPHERE_DOMAIN_NAME)
+    
+    isexists=$(ls .ssh/tkg_rsa.pub)
+    if [[ -z $isexists ]]
+    then
+        printf "\n\n\nexecuting ssh-keygen for email $TKG_ADMIN_EMAIL...\n"
+        ssh-keygen -f ~/.ssh/tkg_rsa -t rsa -b 4096 -C "$TKG_ADMIN_EMAIL"
+    else 
+        isexists=$(ls .ssh/tkg_rsa)
         if [[ -z $isexists ]]
         then
-            printf "\nVSPHERE_DOMAIN_NAME=" >> /root/.env
-        fi
-        while true; do
-            read -p "Confirm to continue? [y/n] " yn
-            case $yn in
-                [Yy]* ) printf "\nyou confirmed yes\n"; break;;
-                [Nn]* ) printf "\n\nYou said no. \n\nQuiting...\n\n"; returnOrexit;;
-                * ) echo "Please answer yes or no.";;
-            esac
-        done
-        export $(cat /root/.env | xargs)
-    done
-
-    while [[ -n $BASTION_HOST && -z $NSX_ALB_IP ]]; do
-        printf "\nNSX_ALB_ENDPOINT not set in the .env file."
-        printf "\nPlease add NSX_ALB_IP={ip address} in the .env file"
-        printf "\nReplace {ip address} with the ip address of the NSX ALB Contoller IP address"
-        printf "\n"
-        if [[ $SILENTMODE == 'y' ]]
-        then
+            printf "\n\nERROR: found tkg_rsa.pub in the .ssh dir BUT did not find private key to add named tkg_rsa."
+            printf "\n\tPlease remove the tkg_rsa.pub to re-create key pair OR provide private key tkg_rsa file"
+            printf "\n\tQuiting..."
             returnOrexit
         fi
-        isexists=$(cat /root/.env | grep -w NSX_ALB_IP)
-        if [[ -z $isexists ]]
-        then
-            printf "\nNSX_ALB_ENDPOINT=" >> /root/.env
-        fi
-        while true; do
-            read -p "Confirm to continue? [y/n] " yn
-            case $yn in
-                [Yy]* ) printf "\nyou confirmed yes\n"; break;;
-                [Nn]* ) printf "\n\nYou said no. \n\nQuiting...\n\n"; returnOrexit;;
-                * ) echo "Please answer yes or no.";;
-            esac
-        done
-        export $(cat /root/.env | xargs)
-    done
-
-    while [[ -n $BASTION_HOST && -z $NSX_ALB_DOMAIN_NAME ]]; do
-        printf "\nNSX_ALB_DOMAIN_NAME not set in the .env file."
-        printf "\nPlease add NSX_ALB_DOMAIN_NAME={your.nsxalb.domain.name} in the .env file"
-        printf "\nReplace {your.nsxalb.domain.name} with the domain name of the NSX ALB Contoller"
-        printf "\n"
-        if [[ $SILENTMODE == 'y' ]]
-        then
-            returnOrexit
-        fi
-        isexists=$(cat /root/.env | grep -w NSX_ALB_DOMAIN_NAME)
-        if [[ -z $isexists ]]
-        then
-            printf "\nNSX_ALB_DOMAIN_NAME=" >> /root/.env
-        fi
-        while true; do
-            read -p "Confirm to continue? [y/n] " yn
-            case $yn in
-                [Yy]* ) printf "\nyou confirmed yes\n"; break;;
-                [Nn]* ) printf "\n\nYou said no. \n\nQuiting...\n\n"; returnOrexit;;
-                * ) echo "Please answer yes or no.";;
-            esac
-        done
-        export $(cat /root/.env | xargs)
-    done
-
-
-    while [[ -n $BASTION_HOST && -z $K8S_VIP_SUBNET ]]; do
-        printf "\nK8S_VIP_SUBNET not set in the .env file."
-        printf "\nPlease add K8S_VIP_SUBNET={ip subnet} in the .env file"
-        printf "\nReplace {ip subnet} with the ip subnet configured for k8s front end network in AVI"
-        printf "\n"
-        if [[ $SILENTMODE == 'y' ]]
-        then
-            returnOrexit
-        fi
-        isexists=$(cat /root/.env | grep -w K8S_VIP_SUBNET)
-        if [[ -z $isexists ]]
-        then
-            printf "\nK8S_VIP_SUBNET=" >> /root/.env
-        fi
-        while true; do
-            read -p "Confirm to continue? [y/n] " yn
-            case $yn in
-                [Yy]* ) printf "\nyou confirmed yes\n"; break;;
-                [Nn]* ) printf "\n\nYou said no. \n\nQuiting...\n\n"; returnOrexit;;
-                * ) echo "Please answer yes or no.";;
-            esac
-        done
-        export $(cat /root/.env | xargs)
-    done
-
+    fi
+    
 
     if [[ -n $BASTION_HOST ]]
     then
@@ -209,7 +119,7 @@ then
         fi
         
 
-        sshuttle --dns --python python2 -D -r $BASTION_USERNAME@$BASTION_HOST $K8S_VIP_SUBNET $NSX_ALB_SUBNET $DNS_SERVER_SUBNET $VSPHERE_SUBNET --disable-ipv6 -x 127.0.0.1/24 $EXCLUDE_DOCKER_IP -v
+        sshuttle --dns --python python2 -D -r $BASTION_USERNAME@$BASTION_HOST $K8S_VIP_SUBNET 192.168.130.0/24 $NSX_ALB_SUBNET $DNS_SERVER_SUBNET $VSPHERE_SUBNET --disable-ipv6 -x 127.0.0.1/24 $EXCLUDE_DOCKER_IP -v
         
         sleep 3
 
@@ -230,23 +140,17 @@ then
         printf "\n=> DONE."
 
         printf "\n\n\n"
-    fi
+    fi   
 
 
-    
+    printf "\n\nPerforming ssh-add ~/.ssh/id_rsa ...\n"
+    eval `ssh-agent -s`
+    ssh-add /root/.ssh/id_rsa
+    printf "\nADDED.\n"
 
+    printf "\n\n\n Here's your public key in ~/.ssh/id_rsa.pub:\n"
+    cat ~/.ssh/id_rsa.pub
 
-    isexists=$(ls .ssh/tkg_rsa.pub)
-    if [[ -z $isexists ]]
-    then
-        printf "\n\n\nexecuting ssh-keygen for email $TKG_ADMIN_EMAIL...\n"
-        ssh-keygen -f ~/.ssh/tkg_rsa -t rsa -b 4096 -C "$TKG_ADMIN_EMAIL"
-        ssh-add ~/.ssh/tkg_rsa
-    fi
-    
-
-    printf "\n\n\n Here's your public key in ~/.ssh/tkg_rsa.pub:\n"
-    cat ~/.ssh/tkg_rsa.pub   
 
     if [[ -n $MANAGEMENT_CLUSTER_CONFIG_FILE ]]
     then

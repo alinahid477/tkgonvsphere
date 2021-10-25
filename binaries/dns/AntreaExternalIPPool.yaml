@@ -1,0 +1,10 @@
+apiVersion: crd.antrea.io/v1alpha1
+kind: ExternalIPPool
+metadata:
+    name: snat-ippool-lb
+spec:
+    ipRanges:
+    - start: 172.19.0.2  ###SNAT IP
+      end: 172.19.0.2
+    - cidr: 192.168.220.0/23  ###Single IP CIDR
+    nodeSelector: {} ###All Nodes can be Egress Nodes

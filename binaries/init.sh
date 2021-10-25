@@ -6,7 +6,7 @@ install_tanzu_plugin()
     if [[ -z $isexists ]]
     then
         printf "\nChecking tanzu cli bundle in ~/binaries...\n"
-        isexists=$(ls /binaries | grep -w "tanzu-cli-bundle-linux-amd64.tar$")
+        isexists=$(ls ~/binaries | grep -w "tanzu-cli-bundle-linux-amd64.tar$")
         if [[ -z $isexists ]]
         then
             printf "\nError: Bundle ~/binaries/tanzu-cli-bundle-linux-amd64.tar not found. Exiting..\n"

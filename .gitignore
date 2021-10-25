@@ -9,6 +9,7 @@
 .azure
 .vmware-cna-saas
 *.tanzu
+.docker
 
 .config
 .cache
@@ -28,5 +29,10 @@ binaries/*
 !binaries/adjustdns.sh
 !binaries/attach_to_tmc.sh
 !binaries/init.sh
+!binaries/Dockerfile
+!binaries/.dockerignore
+!binaries/bastionhostinit.sh
+!binaries/bastionhostrun.sh
+!binaries/bastionhostsetup.sh
 workload-clusters/*
 !workload-clusters/.gitkeep

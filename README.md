@@ -33,3 +33,8 @@ Where is cert and private key for NSXALB
 - This is something that you can generate in the AVI controller itself at Templates > Security > SSL/TSL Certificates > Create New
 - Then download the cert and privatekey
 - ALSO, add the cert entry in the Administration > Settings > Access Settings (Edit) > SSL/TLS Certificate field
+
+
+
+kubectl apply -f workload-clusters/corednsconfigmap.yaml
+kubectl -n kube-system rollout restart deployment coredns
