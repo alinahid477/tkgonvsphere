@@ -1,4 +1,0 @@
-zone "corp.tanzu" {
-    type master;
-    file "/etc/bind/zones/db.corp.tanzu";
-};

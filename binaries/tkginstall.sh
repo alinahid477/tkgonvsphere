@@ -1,6 +1,10 @@
 #!/bin/bash
 
 unset TKG_ADMIN_EMAIL
+unset MANAGEMENT_CLUSTER_CONFIG_FILE
+unset COMPLETE
+unset BASTION_HOST
+unset BASTION_USERNAME
 
 returnOrexit()
 {
@@ -19,9 +23,7 @@ returnOrexit()
     fi
 }
 
-unset COMPLETE
-unset BASTION_HOST
-unset BASTION_USERNAME
+
 
 
 export $(cat /root/.env | xargs)
@@ -79,98 +81,40 @@ then
             returnOrexit
         fi
     fi
-    
 
     if [[ -n $BASTION_HOST ]]
     then
         echo "=> Bastion host detected."
 
-        chmod 0600 /root/.ssh/*
-        cp /root/.ssh/sshuttleconfig /root/.ssh/ssh_config
-        mv /etc/ssh/ssh_config /etc/ssh/ssh_config-default
-        ln -s /root/ssh/ssh_config /etc/ssh/ssh_config
+        printf "\n\nPerforming ssh-add ~/.ssh/id_rsa ...\n"
+        eval `ssh-agent -s`
+        ssh-add /root/.ssh/id_rsa
+        printf "\nADDED.\n"
 
-        printf "\n\n\n"
-        echo "=> Establishing sshuttle with remote $BASTION_USERNAME@$BASTION_HOST...."
-        
-        DOCKER_IP=$(ip -o -f inet addr show | awk '/scope global/ {print $2,$4}' | grep docker | awk '{print $2}')
-        echo "=> DOCKER_IP=$DOCKER_IP"
-        if [[ -n $DOCKER_IP ]]
+        source /root/binaries/bastionhostsetup.sh
+    else
+        printf "\n\n\n Here's your public key in ~/.ssh/id_rsa.pub:\n"
+        cat ~/.ssh/tkg_rsa.pub
+
+        if [[ -n $MANAGEMENT_CLUSTER_CONFIG_FILE ]]
         then
-            EXCLUDE_DOCKER_IP="-x $DOCKER_IP"
+            printf "\nLaunching management cluster create using $MANAGEMENT_CLUSTER_CONFIG_FILE...\n"
+            tanzu management-cluster create --file $MANAGEMENT_CLUSTER_CONFIG_FILE -v 9
         else
-            EXCLUDE_DOCKER_IP=''
+            printf "\nLaunching management cluster create using UI...\n"
+            tanzu management-cluster create --ui -y -v 9 --browser none
         fi
-        
-        NSX_ALB_SUBNET_IP=$(echo $NSX_ALB_IP | awk -F"." '{print $1"."$2"."$3".0"}')
-        NSX_ALB_SUBNET=$NSX_ALB_SUBNET_IP/24
-
-        DNS_SERVER_SUBNET=''
-        DNS_SERVER_SUBNET_IP=$(echo $DNS_SERVER_ENDPOINT | awk -F"." '{print $1"."$2"."$3".0"}')
-        if [[ $DNS_SERVER_SUBNET_IP != $NSX_ALB_SUBNET_IP ]]
-        then
-            DNS_SERVER_SUBNET=$DNS_SERVER_SUBNET_IP/24
-        fi
-
-        VSPHERE_SUBNET_IP=$(echo $VSPHERE_IP | awk -F"." '{print $1"."$2"."$3".0"}')
-        if [[ $VSPHERE_SUBNET_IP != $NSX_ALB_SUBNET_IP && $VSPHERE_SUBNET_IP != $DNS_SERVER_SUBNET_IP ]]
-        then
-            VSPHERE_SUBNET_IP=$VSPHERE_SUBNET/24
-        fi
-        
-
-        sshuttle --dns --python python2 -D -r $BASTION_USERNAME@$BASTION_HOST $K8S_VIP_SUBNET 192.168.130.0/24 $NSX_ALB_SUBNET $DNS_SERVER_SUBNET $VSPHERE_SUBNET --disable-ipv6 -x 127.0.0.1/24 $EXCLUDE_DOCKER_IP -v
-        
-        sleep 3
-
-        while true; do
-            read -p "Confirm to continue? [y/n] " yn
-            case $yn in
-                [Yy]* ) printf "\nyou confirmed yes\n"; break;;
-                [Nn]* ) printf "\n\nYou said no. \n\nQuiting...\n\n"; returnOrexit;;
-                * ) echo "Please answer yes or no.";;
-            esac
-        done
-
-        printf "\nLaunching CoreDNS adjust...\n"
-        cd /root/binaries
-        ./adjustdns.sh &
-        cd ~
-
-        printf "\n=> DONE."
-
-        printf "\n\n\n"
     fi   
 
 
-    printf "\n\nPerforming ssh-add ~/.ssh/id_rsa ...\n"
-    eval `ssh-agent -s`
-    ssh-add /root/.ssh/id_rsa
-    printf "\nADDED.\n"
+    # ISPINNIPED=$(kubectl get svc -n pinniped-supervisor | grep pinniped-supervisor)
 
-    printf "\n\n\n Here's your public key in ~/.ssh/id_rsa.pub:\n"
-    cat ~/.ssh/id_rsa.pub
-
-
-    if [[ -n $MANAGEMENT_CLUSTER_CONFIG_FILE ]]
-    then
-        printf "\nLaunching management cluster create using $MANAGEMENT_CLUSTER_CONFIG_FILE...\n"
-        tanzu management-cluster create --file $MANAGEMENT_CLUSTER_CONFIG_FILE -v 9
-    else
-        printf "\nLaunching management cluster create using UI...\n"
-        tanzu management-cluster create --ui -y -v 9 --browser none
-    fi
-    
-    # --bind 100.64.0.2:8080
-
-    ISPINNIPED=$(kubectl get svc -n pinniped-supervisor | grep pinniped-supervisor)
-
-    if [[ ! -z "$ISPINNIPED" ]]
-    then
-        printf "\n\n\nBelow is details of the service for the auth callback url. Update your OIDC/LDAP callback accordingly.\n"
-        kubectl get svc -n pinniped-supervisor
-        printf "\nDocumentation: https://docs.vmware.com/en/VMware-Tanzu-Kubernetes-Grid/1.3/vmware-tanzu-kubernetes-grid-13/GUID-mgmt-clusters-configure-id-mgmt.html\n"
-    fi
+    # if [[ ! -z "$ISPINNIPED" ]]
+    # then
+    #     printf "\n\n\nBelow is details of the service for the auth callback url. Update your OIDC/LDAP callback accordingly.\n"
+    #     kubectl get svc -n pinniped-supervisor
+    #     printf "\nDocumentation: https://docs.vmware.com/en/VMware-Tanzu-Kubernetes-Grid/1.3/vmware-tanzu-kubernetes-grid-13/GUID-mgmt-clusters-configure-id-mgmt.html\n"
+    # fi
 
     printf "\n\n\nDone. Marking as commplete.\n\n\n"
     printf "\nCOMPLETE=YES" >> /root/.env

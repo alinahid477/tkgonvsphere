@@ -11,9 +11,6 @@ ENV TANZU_CLI_VERSION=1.4.0
 # nano (required) buster-slim doesn't even have less. so I needed an editor to view/edit file (eg: /etc/hosts) 
 # jq for parsing json (output of az commands, kubectl output etc)
 # unzip needed 
-# dante - dante client provide socksify command;
-# connect.c - classic solution to ssh through proxy (socks and http) with authentication capabilities;
-# nc (netcat) and socat - same but with no proxy authentication;
 # sshuttle - "vpn" solution, route TCP traffic through ssh connection;
 # sshpass - ssh password authentication (octopus does not accept ssh keys)
 RUN apt-get update && apt-get install -y \
@@ -25,19 +22,11 @@ RUN apt-get update && apt-get install -y \
 	psmisc \
 	nano \
 	less \
-	net-tools \
-	inetutils-traceroute \
-	dnsutils \
-	iputils-ping \
 	unzip \
-	iproute2 \
 	python2 \
-	netcat-openbsd \
-	socat \
 	sshpass \
 	iptables \
 	sshuttle \
-	nginx \
 	&& curl -L https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl \
 	&& chmod +x /usr/local/bin/kubectl
 
