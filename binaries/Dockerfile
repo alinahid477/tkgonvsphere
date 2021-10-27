@@ -4,6 +4,7 @@ FROM debian:buster-slim
 ENV DOCKER_VERSION=20.10.8
 ENV TANZU_CLI_VERSION=1.4.0
 
+
 # culr (optional) for downloading/browsing stuff
 # openssh-client (required) for creating ssh tunnel
 # psmisc (optional) I needed it to test port binding after ssh tunnel (eg: netstat -ntlp | grep 6443)
@@ -49,5 +50,11 @@ RUN chmod +x /usr/local/bastionhostinit.sh
 # RUN chmod +x /usr/local/bin/tmc
 
 
+# ARG USER_ID
+# ARG GROUP_ID
+
+# RUN addgroup --gid $GROUP_ID user
+# RUN adduser --disabled-password --gecos '' --uid $USER_ID --gid $GROUP_ID user
+# USER user
 
 ENTRYPOINT [ "/usr/local/bastionhostinit.sh"]

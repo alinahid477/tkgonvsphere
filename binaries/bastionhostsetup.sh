@@ -62,6 +62,14 @@ printf "\nStarting remote docker with tanzu cli...\n"
 ssh -i .ssh/id_rsa $BASTION_USERNAME@$BASTION_HOST 'chmod +x ~/merlin/tkgonvsphere/bastionhostrun.sh && merlin/tkgonvsphere/bastionhostrun.sh '$DOCKERHUB_USERNAME $DOCKERHUB_PASSWORD
 
 
+while true; do
+    read -p "Confirm to continue? [y] " yn
+    case $yn in
+        [Yy]* ) printf "\nyou confirmed yes\n"; break;;
+        * ) echo "Please answer y when you are ready.";;
+    esac
+done
+
 printf "\nCreating remote context...\n"
 isexist=$(docker context ls | grep "bastionhostdocker$")
 if [[ -z $isexist ]]
@@ -81,7 +89,7 @@ then
     # homepath=$(ssh -i .ssh/id_rsa $BASTION_USERNAME@$BASTION_HOST 'pwd')
     filename=$(echo $MANAGEMENT_CLUSTER_CONFIG_FILE| rev | awk -v FS='/' '{print $1}' | rev)
     printf "\nLaunching management cluster create using $MANAGEMENT_CLUSTER_CONFIG_FILE...\n"
-    docker exec -idt merlintkgonvsphere bash -c "cd ~ ; tanzu management-cluster create --file /root/$filename -v 9"
+    docker exec -idt merlintkgonvsphere bash -c "cd ~ ; tanzu management-cluster create --file /home/user/$filename -v 9"
 else
     printf "\nLaunching management cluster create using UI...\n"
     docker exec -idt merlintkgonvsphere bash -c "cd ~ ; tanzu management-cluster create --ui -y -v 9 --browser none"
@@ -150,8 +158,8 @@ while [[ $dobreak == 'n' && $count -lt 30 ]]; do
 done
 
 printf "\n==> TGK management cluster deployed -->> DONE.\n"
-printf "\nWaiting 1m before clean up...\n"
-sleep 1m
+printf "\nWaiting 30s before clean up...\n"
+sleep 30
 
 printf "\n==> Start merlin cleanup process....\n"
 
@@ -161,7 +169,7 @@ kill $sshuttlepid
 printf "==> DONE\n"
 sleep 2
 
-printf "\nDownloading management cluster config...\n"
+printf "\nDownloading management cluster configs...\n"
 cd ~
 mkdir -p .config/tanzu/tkg/clusterconfigs
 filename=$(docker exec merlintkgonvsphere ls ~/.config/tanzu/tkg/clusterconfigs/ || printf "")
@@ -183,12 +191,60 @@ while [[ $error == 'y' && $count -lt 5 ]]; do
     docker exec merlintkgonvsphere cat ~/.config/tanzu/tkg/clusterconfigs/$filename > ~/.config/tanzu/tkg/clusterconfigs/$filename || error='y'
     ((count=count+1))
 done
+
+sleep 1
+error='n'
+docker exec merlintkgonvsphere cat ~/.config/tanzu/tkg/cluster-config.yaml > ~/.config/tanzu/tkg/cluster-config.yaml || error='y'
+count=1
+while [[ $error == 'y' && $count -lt 5 ]]; do
+    printf "failed downloading. retrying in 5s...\n"
+    sleep 5
+    error='n'
+    docker exec merlintkgonvsphere cat ~/.config/tanzu/tkg/cluster-config.yaml > ~/.config/tanzu/tkg/cluster-config.yaml || error='y'
+    ((count=count+1))
+done
+
+sleep 1
+error='n'
+docker exec merlintkgonvsphere cat ~/.config/tanzu/tkg/features.json > ~/.config/tanzu/tkg/features.json || error='y'
+count=1
+while [[ $error == 'y' && $count -lt 5 ]]; do
+    printf "failed downloading. retrying in 5s...\n"
+    sleep 5
+    error='n'
+    docker exec merlintkgonvsphere cat ~/.config/tanzu/tkg/features.json > ~/.config/tanzu/tkg/features.json || error='y'
+    ((count=count+1))
+done
+
+sleep 1
+error='n'
+docker exec merlintkgonvsphere cat ~/.kube/config > ~/.kube/config || error='y'
+count=1
+while [[ $error == 'y' && $count -lt 5 ]]; do
+    printf "failed downloading kubeconfig. retrying in 5s...\n"
+    sleep 5
+    error='n'
+    docker exec merlintkgonvsphere cat ~/.kube/config > ~/.kube/ || error='y'
+    ((count=count+1))
+done
+# scp -r $BASTION_USERNAME@$BASTION_HOST:~/merlin/tkgonvsphere/.config/tanzu/tkg/clusterconfigs ~/.config/tanzu/tkg/
 printf "==> DONE\n"
 sleep 2
+# sleep 10
+# tanzu cluster list
+# tanzu cluster kubeconfig get  --admin
+
+
+while true; do
+    read -p "Confirm to continue? [y] " yn
+    case $yn in
+        [Yy]* ) printf "\nyou confirmed yes\n"; break;;
+        * ) echo "Please answer y when you are ready.";;
+    esac
+done
+
 
 printf "\nCleanup bastion host...\n"
-
-
 sleep 2
 error='n'
 docker exec merlintkgonvsphere rm -r ~/.cache/ ~/.config/ ~/.local/ ~/.kube-tkg/ ~/.kube/ || error='y'
