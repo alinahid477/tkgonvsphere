@@ -48,7 +48,6 @@ fi
 # echo "is ... $ISCONFIGEXIST"
 if [ -z "$ISCONFIGEXIST" ]
 then
-    printf "\nhere $configfile\n"
     unset configfile    
 fi
 
@@ -60,25 +59,15 @@ else
     printf "\n\nconfigfile: $configfile"
 
     CLUSTER_NAME=$(cat $configfile | sed -r 's/[[:alnum:]]+=/\n&/g' | awk -F: '$1=="CLUSTER_NAME"{print $2}' | xargs)
-    TMC_CLUSTER_GROUP=$(cat $configfile | sed -r 's/[[:alnum:]]+=/\n&/g' | awk -F: '$1=="TMC_CLUSTER_GROUP"{print $2}' | xargs)
-    if [ -z "$TMC_CLUSTER_GROUP" ]
-    then
-        TMC_ATTACH_URL=$(cat $configfile | grep -o 'https://[^"]*' | xargs)
-        if [[ ! -z $TMC_ATTACH_URL ]]
-        then
-            TMC_ATTACH_URL=$(echo "\"$TMC_ATTACH_URL\"")
-        fi
-    fi    
+    CLUSTER_PLAN=$(cat $configfile | sed -r 's/[[:alnum:]]+=/\n&/g' | awk -F: '$1=="CLUSTER_PLAN"{print $2}' | xargs)
+    CONTROL_PLANE_MACHINE_COUNT=$(cat $configfile | sed -r 's/[[:alnum:]]+=/\n&/g' | awk -F: '$1=="CONTROL_PLANE_MACHINE_COUNT"{print $2}' | xargs)
+    WORKER_MACHINE_COUNT=$(cat $configfile | sed -r 's/[[:alnum:]]+=/\n&/g' | awk -F: '$1=="WORKER_MACHINE_COUNT"{print $2}' | xargs)
+    
     printf "\n below information were extracted from the file supplied:\n"
     printf "\nCLUSTER_NAME=$CLUSTER_NAME"
-    if [[ ! -z $TMC_ATTACH_URL ]]
-    then
-        printf "\nTMC_ATTACH_URL=$TMC_ATTACH_URL"
-    fi
-    if [[ ! -z $TMC_CLUSTER_GROUP ]]
-    then
-        printf "\nTMC_CLUSTER_GROUP=$TMC_CLUSTER_GROUP"
-    fi
+    printf "\nCLUSTER_PLAN=$CLUSTER_PLAN"
+    printf "\nCONTROL_PLANE_MACHINE_COUNT=$CONTROL_PLANE_MACHINE_COUNT"
+    printf "\nWORKER_MACHINE_COUNT=$WORKER_MACHINE_COUNT"
     printf "\n\n\n"
     while true; do
         read -p "Confirm if the information is correct? [y/n] " yn
@@ -101,7 +90,7 @@ then
     sed -i '$ d' $configfile
 
     printf "Creating k8s cluster from yaml called ~/workload-clusters/$CLUSTER_NAME.yaml\n\n"
-    tanzu cluster create  --file $configfile -v 9 --tkr $TKR_VERSION # --dry-run > ~/workload-clusters/$CLUSTER_NAME-dryrun.yaml
+    tanzu cluster create  --file $configfile -v 9 #--tkr $TKR_VERSION # --dry-run > ~/workload-clusters/$CLUSTER_NAME-dryrun.yaml
     printf "\n\nDONE.\n\n\n"
 
     # printf "applying ~/workload-clusters/$CLUSTER_NAME-dryrun.yaml\n\n"
