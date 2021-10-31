@@ -172,12 +172,12 @@ sleep 2
 printf "\nDownloading management cluster configs...\n"
 cd ~
 mkdir -p .config/tanzu/tkg/clusterconfigs
-filename=$(docker exec merlintkgonvsphere ls ~/.config/tanzu/tkg/clusterconfigs/ || printf "")
+filename=$(docker exec merlintkgonvsphere ls -1tc ~/.config/tanzu/tkg/clusterconfigs/ | head -1 || printf "")
 count=1
 while [[ -z $filename && $count -lt 5 ]]; do
     printf "failed getting filename. retrying in 5s...\n"
     sleep 5
-    filename=$(docker exec merlintkgonvsphere ls ~/.config/tanzu/tkg/clusterconfigs/ || printf "")
+    filename=$(docker exec merlintkgonvsphere ls -1tc ~/.config/tanzu/tkg/clusterconfigs/ | head -1 || printf "")
     ((count=count+1))
 done
 sleep 1
@@ -189,6 +189,19 @@ while [[ $error == 'y' && $count -lt 5 ]]; do
     sleep 5
     error='n'
     docker exec merlintkgonvsphere cat ~/.config/tanzu/tkg/clusterconfigs/$filename > ~/.config/tanzu/tkg/clusterconfigs/$filename || error='y'
+    ((count=count+1))
+done
+
+
+sleep 1
+error='n'
+docker exec merlintkgonvsphere cat ~/.config/tanzu/config.yaml > ~/.config/tanzu/config.yaml || error='y'
+count=1
+while [[ $error == 'y' && $count -lt 5 ]]; do
+    printf "failed downloading. retrying in 5s...\n"
+    sleep 5
+    error='n'
+    docker exec merlintkgonvsphere cat ~/.config/tanzu/config.yaml > ~/.config/tanzu/config.yaml || error='y'
     ((count=count+1))
 done
 
@@ -227,6 +240,20 @@ while [[ $error == 'y' && $count -lt 5 ]]; do
     docker exec merlintkgonvsphere cat ~/.kube/config > ~/.kube/ || error='y'
     ((count=count+1))
 done
+
+mkdir -p ~/.kube-tkg
+sleep 1
+error='n'
+docker exec merlintkgonvsphere cat ~/.kube-tkg/config > ~/.kube-tkg/config || error='y'
+count=1
+while [[ $error == 'y' && $count -lt 5 ]]; do
+    printf "failed downloading ~/.kube-tkg/kubeconfig. retrying in 5s...\n"
+    sleep 5
+    error='n'
+    docker exec merlintkgonvsphere cat ~/.kube-tkg/config > ~/.kube-tkg/ || error='y'
+    ((count=count+1))
+done
+
 # scp -r $BASTION_USERNAME@$BASTION_HOST:~/merlin/tkgonvsphere/.config/tanzu/tkg/clusterconfigs ~/.config/tanzu/tkg/
 printf "==> DONE\n"
 sleep 2
@@ -244,20 +271,7 @@ while true; do
 done
 
 
-printf "\nCleanup bastion host...\n"
-sleep 2
-error='n'
-docker exec merlintkgonvsphere rm -r ~/.cache/ ~/.config/ ~/.local/ ~/.kube-tkg/ ~/.kube/ || error='y'
-count=1
-while [[ $error == 'y' && $count -lt 5 ]]; do
-    printf "failed. retrying in 5s...\n"
-    sleep 5
-    error='n'
-    docker exec merlintkgonvsphere rm -r ~/.cache/ ~/.config/ ~/.local/ ~/.kube-tkg/ ~/.kube/ || error='y'
-    ((count=count+1))
-done
-printf "\nRemoved temporary files..."
-
+printf "\nCleanup bastion's docker...\n"
 sleep 2
 containerid=$(docker ps -aqf "name=^merlintkgonvsphere$" || printf "")
 count=1
@@ -289,12 +303,47 @@ sleep 2
 docker rmi -f $(docker images -f "dangling=true" -q)
 sleep 2
 docker rmi -f $(docker images -q)
-printf "\nRemoved images..."
-sleep 2
-ssh -i .ssh/id_rsa $BASTION_USERNAME@$BASTION_HOST 'rm -r ~/merlin/tkgonvsphere'
-printf "\nRemoved files..."
-printf "\n==> DONE\n"
+printf "\nRemoved docker images..."
 
+
+printf "\n\n"
+printf "\nDuring the installation process Tanzu CLI created few files in the bastion host under directory ~/merlin of user $BASTION_USERNAME"
+printf "\nNecessary files are downloaded on your local (this docker container) directory for local connection to tanzu kubernetes grid."
+printf "\nThus you have copy of the required files in your local so it is safe to delete the remote files."
+printf "\nHowever, If you have enough space on the bastion host you may choose keep these files on the bastion host, just in case."
+printf "\nYou may also choose to delete these files."
+isremoveremotefiles='n'
+while true; do
+    read -p "Would you like to remove Tanzu CLI files from bastion host? [yn]: " yn
+    case $yn in
+        [Yy]* ) isremoveremotefiles='y'; printf "\nyou confirmed yes\n"; break;;
+        [Nn]* ) printf "\nyou said no.\n"; break;;
+        * ) echo "Please answer y or n to proceed...";;
+    esac
+done
+if [[ $isremoveremotefiles == 'y' ]]
+then
+    printf "\nCleanup bastion's files...\n"
+    sleep 2
+    error='n'
+    docker exec merlintkgonvsphere rm -r ~/.cache/ ~/.config/ ~/.local/ ~/.kube-tkg/ ~/.kube/ || error='y'
+    count=1
+    while [[ $error == 'y' && $count -lt 5 ]]; do
+        printf "failed. retrying in 5s...\n"
+        sleep 5
+        error='n'
+        docker exec merlintkgonvsphere rm -r ~/.cache/ ~/.config/ ~/.local/ ~/.kube-tkg/ ~/.kube/ || error='y'
+        ((count=count+1))
+    done
+    printf "\nRemoved configs and caches files..."
+    sleep 2
+    ssh -i .ssh/id_rsa $BASTION_USERNAME@$BASTION_HOST 'rm -r ~/merlin/tkgonvsphere'
+    printf "\nRemoved tkgonvsphere under ~/merlin/..."
+fi
+
+
+
+printf "\n==> DONE\n"
 printf "\n==> Cleanup process complete....\n"
 
 # printf "\nStarting sshuttle...\n"
