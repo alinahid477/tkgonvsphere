@@ -259,7 +259,7 @@ then
                 bastion_host_tunnel $tanzupath
                 printf "\nFound \n\tcontext: $tanzucontext \n\tname: $tanzuname \n\tpath: $tanzupath\n.Performing Tanzu login..."
                 sleep 1
-                tanzu login --kubeconfig $tanzupath --context $tanzucontext --name $tanzuname
+                # tanzu login --kubeconfig $tanzupath --context $tanzucontext --name $tanzuname
                 isloggedin='y'
             fi
             if [[ -n $tanzuendpoint ]]
