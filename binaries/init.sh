@@ -84,7 +84,7 @@ function bastion_host_tunnel {
                 printf "\nCreating endpoint Tunnel through bastion $BASTION_USERNAME@$BASTION_HOST ...\n"
                 sleep 1
                 ssh -i /root/.ssh/id_rsa -4 -fNT -L $port:$serverurl:$port $BASTION_USERNAME@$BASTION_HOST
-                ssh -i /root/.ssh/id_rsa -4 -fNT -L 443:$serverurl:443 $BASTION_USERNAME@$BASTION_HOST
+                # ssh -i /root/.ssh/id_rsa -4 -fNT -L 443:$serverurl:443 $BASTION_USERNAME@$BASTION_HOST
                 sleep 1
                 printf "\n=>Tunnel created.\n"
                 if [[ -z $MANAGEMENT_CLUSTER_ENDPOINT ]]

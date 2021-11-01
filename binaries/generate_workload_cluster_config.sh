@@ -18,7 +18,7 @@ mgmtconfigfile=$(ls ~/.config/tanzu/tkg/clusterconfigs/ | awk -v i=1 -v j=1 'FNR
 printf "\n\nRequired management cluster config file: $mgmtconfigfile\n"
 if [[ ! -z $mgmtconfigfile ]]
 then
-    mgmtconfigfile=~/config/.tanzu/tkg/clusterconfigs/$mgmtconfigfile 
+    mgmtconfigfile=~/.config/tanzu/tkg/clusterconfigs/$mgmtconfigfile 
     echo "" > ~/workload-clusters/tmp.yaml
     chmod 777 ~/workload-clusters/tmp.yaml
     while IFS=: read -r key val
@@ -100,18 +100,34 @@ then
         WORKER_SIZE="large"
     fi
 
-    read -p "CONTROL_PLANE_MACHINE_COUNT:(press enter to keep extracted default \"$CONTROL_PLANE_MACHINE_COUNT\") " inp
-    if [ -z "$inp" ]
-    then
-        inp=$CONTROL_PLANE_MACHINE_COUNT
-    fi
+    while true; do
+        read -p "CONTROL_PLANE_MACHINE_COUNT:(press enter to keep extracted default \"$CONTROL_PLANE_MACHINE_COUNT\") " inp
+        if [ -z "$inp" ]
+        then
+            inp=$CONTROL_PLANE_MACHINE_COUNT
+        fi
+        if [[ ! $inp =~ ^[0-9]+$ || $inp < 1 ]]
+        then
+            printf "\nYou must provide a valid value.\n"
+        else
+            break
+        fi
+    done
     printf "CONTROL_PLANE_MACHINE_COUNT: $inp\n" >> ~/workload-clusters/tmp.yaml
     printf "\n\n"
-    read -p "WORKER_MACHINE_COUNT:(press enter to keep extracted default \"$WORKER_MACHINE_COUNT\") " inp
-    if [ -z "$inp" ]
-    then
-        inp=$WORKER_MACHINE_COUNT
-    fi
+    while true; do
+        read -p "WORKER_MACHINE_COUNT:(press enter to keep extracted default \"$WORKER_MACHINE_COUNT\") " inp
+        if [ -z "$inp" ]
+        then
+            inp=$WORKER_MACHINE_COUNT
+        fi
+        if [[ ! $inp =~ ^[0-9]+$ || $inp < 1 ]]
+        then
+            printf "\nYou must provide a valid value.\n"
+        else
+            break
+        fi
+    done
     printf "WORKER_MACHINE_COUNT: $inp\n" >> ~/workload-clusters/tmp.yaml
     printf "\n\n"
 
@@ -125,6 +141,7 @@ then
     while true; do
         printf "\nSelecting y will prompt with size choices."
         printf "\nSelecting n will prompt with custom node configuration options."
+        printf "\n"
         read -p "Would you like to use the predfined sizes? [y/n] " yn
         case $yn in
             [Yy]* ) usesize='y'; printf "\nyou said yes.\n"; break;;
@@ -168,48 +185,100 @@ then
             VSPHERE_WORKER_DISK_GIB=40
             VSPHERE_WORKER_MEM_MIB=16384
         fi
-        read -p "VSPHERE_CONTROL_PLANE_NUM_CPUS:(press enter to keep extracted default \"$VSPHERE_CONTROL_PLANE_NUM_CPUS\") " inp
-        if [ -z "$inp" ]
-        then
-            inp=$VSPHERE_CONTROL_PLANE_NUM_CPUS
-        fi
+        while true; do
+            read -p "VSPHERE_CONTROL_PLANE_NUM_CPUS:(press enter to keep extracted default \"$VSPHERE_CONTROL_PLANE_NUM_CPUS\") " inp
+            if [ -z "$inp" ]
+            then
+                inp=$VSPHERE_CONTROL_PLANE_NUM_CPUS
+            fi
+            if [[ ! $inp =~ ^[0-9]+$ || $inp < 1 ]]
+            then
+                printf "\nYou must provide a valid value.\n"
+            else
+                break
+            fi
+        done
         printf "VSPHERE_CONTROL_PLANE_NUM_CPUS: $inp\n" >> ~/workload-clusters/tmp.yaml
         printf "\n\n"
-        read -p "VSPHERE_CONTROL_PLANE_DISK_GIB:(press enter to keep extracted default \"$VSPHERE_CONTROL_PLANE_DISK_GIB\") " inp
-        if [ -z "$inp" ]
-        then
-            inp=$VSPHERE_CONTROL_PLANE_DISK_GIB
-        fi
+
+        while true; do
+            read -p "VSPHERE_CONTROL_PLANE_DISK_GIB:(press enter to keep extracted default \"$VSPHERE_CONTROL_PLANE_DISK_GIB\") " inp
+            if [ -z "$inp" ]
+            then
+                inp=$VSPHERE_CONTROL_PLANE_DISK_GIB
+            fi
+            if [[ ! $inp =~ ^[0-9]+$ || $inp < 1 ]]
+            then
+                printf "\nYou must provide a valid value.\n"
+            else
+                break
+            fi
+        done
         printf "VSPHERE_CONTROL_PLANE_DISK_GIB: $inp\n" >> ~/workload-clusters/tmp.yaml
         printf "\n\n"
-        read -p "VSPHERE_CONTROL_PLANE_MEM_MIB:(press enter to keep extracted default \"$VSPHERE_CONTROL_PLANE_MEM_MIB\") " inp
-        if [ -z "$inp" ]
-        then
-            inp=$VSPHERE_CONTROL_PLANE_MEM_MIB
-        fi
+        
+        while true; do
+            read -p "VSPHERE_CONTROL_PLANE_MEM_MIB:(press enter to keep extracted default \"$VSPHERE_CONTROL_PLANE_MEM_MIB\") " inp
+            if [ -z "$inp" ]
+            then
+                inp=$VSPHERE_CONTROL_PLANE_MEM_MIB
+            fi
+            if [[ ! $inp =~ ^[0-9]+$ || $inp < 1 ]]
+            then
+                printf "\nYou must provide a valid value.\n"
+            else
+                break
+            fi
+        done
         printf "VSPHERE_CONTROL_PLANE_MEM_MIB: $inp\n" >> ~/workload-clusters/tmp.yaml
         
         printf "\n\n-----------------------\n\n"
 
-        read -p "VSPHERE_WORKER_NUM_CPUS:(press enter to keep extracted default \"$VSPHERE_WORKER_NUM_CPUS\") " inp
-        if [ -z "$inp" ]
-        then
-            inp=$VSPHERE_WORKER_NUM_CPUS
-        fi
+        while true; do
+            read -p "VSPHERE_WORKER_NUM_CPUS:(press enter to keep extracted default \"$VSPHERE_WORKER_NUM_CPUS\") " inp
+            if [ -z "$inp" ]
+            then
+                inp=$VSPHERE_WORKER_NUM_CPUS
+            fi
+            if [[ ! $inp =~ ^[0-9]+$ || $inp < 1 ]]
+            then
+                printf "\nYou must provide a valid value.\n"
+            else
+                break
+            fi
+        done
         printf "VSPHERE_WORKER_NUM_CPUS: $inp\n" >> ~/workload-clusters/tmp.yaml
         printf "\n\n"
-        read -p "VSPHERE_WORKER_DISK_GIB:(press enter to keep extracted default \"$VSPHERE_WORKER_DISK_GIB\") " inp
-        if [ -z "$inp" ]
-        then
-            inp=$VSPHERE_WORKER_DISK_GIB
-        fi
+        
+        while true; do
+            read -p "VSPHERE_WORKER_DISK_GIB:(press enter to keep extracted default \"$VSPHERE_WORKER_DISK_GIB\") " inp
+            if [ -z "$inp" ]
+            then
+                inp=$VSPHERE_WORKER_DISK_GIB
+            fi
+            if [[ ! $inp =~ ^[0-9]+$ || $inp < 1 ]]
+            then
+                printf "\nYou must provide a valid value.\n"
+            else
+                break
+            fi
+        done
         printf "VSPHERE_WORKER_DISK_GIB: $inp\n" >> ~/workload-clusters/tmp.yaml
         printf "\n\n"
-        read -p "VSPHERE_WORKER_MEM_MIB:(press enter to keep extracted default \"$VSPHERE_WORKER_MEM_MIB\") " inp
-        if [ -z "$inp" ]
-        then
-            inp=$VSPHERE_WORKER_MEM_MIB
-        fi
+        
+        while true; do
+            read -p "VSPHERE_WORKER_MEM_MIB:(press enter to keep extracted default \"$VSPHERE_WORKER_MEM_MIB\") " inp
+            if [ -z "$inp" ]
+            then
+                inp=$VSPHERE_WORKER_MEM_MIB
+            fi
+            if [[ ! $inp =~ ^[0-9]+$ || $inp < 1 ]]
+            then
+                printf "\nYou must provide a valid value.\n"
+            else
+                break
+            fi
+        done
         printf "VSPHERE_WORKER_MEM_MIB: $inp\n" >> ~/workload-clusters/tmp.yaml
     fi
 
@@ -279,7 +348,7 @@ then
     then
         while true; do
             read -p "AUTOSCALER_MAX_NODES_TOTAL: " inp
-            if [[ ! $inp =~ ^[1-9]+$ ]]
+            if [[ ! $inp =~ ^[0-9]+$ || $inp < 1 ]]
             then
                 printf "\nYou must provide a valid value.\n"
             else
@@ -291,19 +360,19 @@ then
         printf "\n\n"
         while true; do
             read -p "AUTOSCALER_SCALE_DOWN_DELAY_AFTER_ADD (in minutes): " inp
-            if [[ ! $inp =~ ^[1-9]+$ ]]
+            if [[ ! $inp =~ ^[0-9]+$ || $inp < 1 ]]
             then
                 printf "\nYou must provide a valid value.\n"
             else
                 AUTOSCALER_SCALE_DOWN_DELAY_AFTER_ADD="${inp}m"
-                break
+                break                
             fi
         done
         printf "AUTOSCALER_SCALE_DOWN_DELAY_AFTER_ADD: $AUTOSCALER_SCALE_DOWN_DELAY_AFTER_ADD\n" >> ~/workload-clusters/tmp.yaml
         printf "\n\n"
         while true; do
             read -p "AUTOSCALER_SCALE_DOWN_DELAY_AFTER_DELETE (in minutes): " inp
-            if [[ ! $inp =~ ^[1-9]+$ ]]
+            if [[ ! $inp =~ ^[0-9]+$ || $inp < 1 ]]
             then
                 printf "\nYou must provide a valid value.\n"
             else
@@ -315,7 +384,7 @@ then
         printf "\n\n"
         while true; do
             read -p "AUTOSCALER_SCALE_DOWN_DELAY_AFTER_FAILURE (in minutes): " inp
-            if [[ ! $inp =~ ^[1-9]+$ ]]
+            if [[ ! $inp =~ ^[0-9]+$ || $inp < 1 ]]
             then
                 printf "\nYou must provide a valid value.\n"
             else
@@ -327,7 +396,7 @@ then
         printf "\n\n"
         while true; do
             read -p "AUTOSCALER_SCALE_DOWN_UNNEEDED_TIME (in minutes): " inp
-            if [[ ! $inp =~ ^[1-9]+$ ]]
+            if [[ ! $inp =~ ^[0-9]+$ || $inp < 1 ]]
             then
                 printf "\nYou must provide a valid value.\n"
             else
@@ -339,7 +408,7 @@ then
         printf "\n\n"
         while true; do
             read -p "AUTOSCALER_MAX_NODE_PROVISION_TIME (in minutes): " inp
-            if [[ ! $inp =~ ^[1-9]+$ ]]
+            if [[ ! $inp =~ ^[0-9]+$ || $inp < 1 ]]
             then
                 printf "\nYou must provide a valid value.\n"
             else
@@ -358,7 +427,8 @@ then
 
     printf "CNI: antrea\n" >> ~/workload-clusters/tmp.yaml
     printf "NAMESPACE: default\n" >> ~/workload-clusters/tmp.yaml
-    
+    printf "ENABLE_DEFAULT_STORAGE_CLASS: true\n" >> ~/workload-clusters/tmp.yaml
+
     mv ~/workload-clusters/tmp.yaml ~/workload-clusters/$CLUSTER_NAME.yaml;
 
     while true; do

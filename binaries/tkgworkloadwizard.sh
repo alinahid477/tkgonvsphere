@@ -62,12 +62,13 @@ else
     CLUSTER_PLAN=$(cat $configfile | sed -r 's/[[:alnum:]]+=/\n&/g' | awk -F: '$1=="CLUSTER_PLAN"{print $2}' | xargs)
     CONTROL_PLANE_MACHINE_COUNT=$(cat $configfile | sed -r 's/[[:alnum:]]+=/\n&/g' | awk -F: '$1=="CONTROL_PLANE_MACHINE_COUNT"{print $2}' | xargs)
     WORKER_MACHINE_COUNT=$(cat $configfile | sed -r 's/[[:alnum:]]+=/\n&/g' | awk -F: '$1=="WORKER_MACHINE_COUNT"{print $2}' | xargs)
-    
+    VSPHERE_SERVER=$(cat $configfile | sed -r 's/[[:alnum:]]+=/\n&/g' | awk -F: '$1=="VSPHERE_SERVER"{print $2}' | xargs)
     printf "\n below information were extracted from the file supplied:\n"
     printf "\nCLUSTER_NAME=$CLUSTER_NAME"
     printf "\nCLUSTER_PLAN=$CLUSTER_PLAN"
     printf "\nCONTROL_PLANE_MACHINE_COUNT=$CONTROL_PLANE_MACHINE_COUNT"
     printf "\nWORKER_MACHINE_COUNT=$WORKER_MACHINE_COUNT"
+    printf "\nVSPHERE_SERVER=$VSPHERE_SERVER"
     printf "\n\n\n"
     while true; do
         read -p "Confirm if the information is correct? [y/n] " yn
@@ -89,6 +90,61 @@ then
 
     sed -i '$ d' $configfile
 
+
+    if [[ -n $BASTION_HOST ]]
+    then
+        printf "\n\nBastion host detected\n"
+        sleep 1
+        if [[ $VSPHERE_SERVER =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+[\:0-9]*$ && -z $VSPHERE_SERVER_IP ]]
+        then
+            echo "\nVSPHERE_SERVER=$VSPHERE_SERVER is an ip.\nGoing to use this for VSPHERE_SERVER_IP..."
+            foundvsphereip=$VSPHERE_SERVER
+        fi
+        if [[ -z $foundvsphereip && -z $VSPHERE_SERVER_IP ]]
+        then
+            echo "\nNo vsphere server ip detected for $VSPHERE_SERVER.\nextracting VSPHERE_SERVER_IP..."
+            echo "=> Establishing sshuttle with remote $BASTION_USERNAME@$BASTION_HOST...."
+            sshuttle --dns --python python2 -D -r $BASTION_USERNAME@$BASTION_HOST 0/0 -x $BASTION_HOST/32 --disable-ipv6 --listen 0.0.0.0:0
+            echo "=> DONE."
+            foundvsphereip=$(getent hosts $VSPHERE_SERVER | awk '{ print $1 }')
+            sleep 1
+            printf "\nStopping sshuttle...\n"
+            sshuttlepid=$(ps aux | grep "/usr/bin/sshuttle --dns" | awk 'FNR == 1 {print $2}')
+            kill $sshuttlepid
+            printf "==> DONE\n"
+        fi
+        if [[ -z $foundvsphereip && -z $VSPHERE_SERVER_IP ]]
+        then
+            echo "\nFailed to extract VSPHERE_SERVER_IP for $VSPHERE_SERVER.\nrequire user input..."
+            while true; do
+                read -p "VSPHERE_SERVER_IP: " inp
+                if [ -z "$inp" ]
+                then
+                    printf "\nYou must provide a valid value.\n"
+                else 
+                    foundvsphereip=$inp
+                    break
+                fi
+            done
+        fi
+        if [[ -n $foundvsphereip && -z $VSPHERE_SERVER_IP ]]
+        then
+            VSPHERE_SERVER_IP=$foundvsphereip
+            echo "\nrecording VSPHERE_SERVER_IP=$VSPHERE_SERVER in .env file\n"
+            printf "\nVSPHERE_SERVER_IP=$VSPHERE_SERVER_IP" >> /root/.env
+        fi
+        if [[ -n $VSPHERE_SERVER_IP ]]
+        then
+            printf "\nestablish tunnel for $VSPHERE_SERVER_IP\n"
+            printf "127.0.0.1 $VSPHERE_SERVER\n" >> /etc/hosts
+            ssh -i /root/.ssh/id_rsa -4 -fNT -L 443:$VSPHERE_SERVER_IP:443 $BASTION_USERNAME@$BASTION_HOST
+            printf "==> DONE.\n"
+        else
+            echo "\nERROR: When bastion host is enabled you must provide VSPHERE_SERVER_IP\nexiting....\n"
+            exit 1
+        fi
+    fi
+
     printf "Creating k8s cluster from yaml called ~/workload-clusters/$CLUSTER_NAME.yaml\n\n"
     tanzu cluster create  --file $configfile -v 9 #--tkr $TKR_VERSION # --dry-run > ~/workload-clusters/$CLUSTER_NAME-dryrun.yaml
     printf "\n\nDONE.\n\n\n"
@@ -105,20 +161,7 @@ then
     tanzu cluster kubeconfig get $CLUSTER_NAME --admin
     printf "\n\nDONE.\n\n\n"
 
-    if [[ ! -z "$TMC_ATTACH_URL" ]]
-    then
-        printf "\nAttaching cluster to TMC\n"
-        printf "\nSwitching context\n"
-        kubectl config use-context $CLUSTER_NAME-admin@$CLUSTER_NAME    
-        kubectl create -f $TMC_ATTACH_URL
-        printf "\n\nDONE.\n\n\n"
-        printf "\nWaiting 1 mins to complete cluster attach\n"
-        sleep 1m
-        printf "\n\nDONE.\n\n\n"
-    else
-        SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
-        source $SCRIPT_DIR/attach_to_tmc.sh -g $TMC_CLUSTER_GROUP -n $CLUSTER_NAME
-    fi
+    fuser -k 443/tcp
        
 
     printf "\n\n\n"
