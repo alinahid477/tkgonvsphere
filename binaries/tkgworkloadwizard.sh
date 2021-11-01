@@ -102,15 +102,20 @@ then
         fi
         if [[ -z $foundvsphereip && -z $VSPHERE_SERVER_IP ]]
         then
-            echo "\nNo vsphere server ip detected for $VSPHERE_SERVER.\nextracting VSPHERE_SERVER_IP..."
+            printf "\nNo vsphere server ip detected for $VSPHERE_SERVER.\nextracting VSPHERE_SERVER_IP..."
             echo "=> Establishing sshuttle with remote $BASTION_USERNAME@$BASTION_HOST...."
             sshuttle --dns --python python2 -D -r $BASTION_USERNAME@$BASTION_HOST 0/0 -x $BASTION_HOST/32 --disable-ipv6 --listen 0.0.0.0:0
             echo "=> DONE."
+            printf "\nextracting VSPHERE_SERVER_IP...\n"
             foundvsphereip=$(getent hosts $VSPHERE_SERVER | awk '{ print $1 }')
             sleep 1
+            printf "\n$foundvsphereip\n"
+            sleep 1
+            echo "=> DONE."
             printf "\nStopping sshuttle...\n"
             sshuttlepid=$(ps aux | grep "/usr/bin/sshuttle --dns" | awk 'FNR == 1 {print $2}')
             kill $sshuttlepid
+            sleep 1
             printf "==> DONE\n"
         fi
         if [[ -z $foundvsphereip && -z $VSPHERE_SERVER_IP ]]
@@ -132,13 +137,16 @@ then
             VSPHERE_SERVER_IP=$foundvsphereip
             echo "\nrecording VSPHERE_SERVER_IP=$VSPHERE_SERVER in .env file\n"
             printf "\nVSPHERE_SERVER_IP=$VSPHERE_SERVER_IP" >> /root/.env
+            sleep 1
         fi
         if [[ -n $VSPHERE_SERVER_IP ]]
         then
             printf "\nestablish tunnel for $VSPHERE_SERVER_IP\n"
+            sleep 1
             printf "127.0.0.1 $VSPHERE_SERVER\n" >> /etc/hosts
             ssh -i /root/.ssh/id_rsa -4 -fNT -L 443:$VSPHERE_SERVER_IP:443 $BASTION_USERNAME@$BASTION_HOST
             printf "==> DONE.\n"
+            sleep 1
         else
             echo "\nERROR: When bastion host is enabled you must provide VSPHERE_SERVER_IP\nexiting....\n"
             exit 1
@@ -146,6 +154,7 @@ then
     fi
 
     printf "Creating k8s cluster from yaml called ~/workload-clusters/$CLUSTER_NAME.yaml\n\n"
+    sleep 2
     tanzu cluster create  --file $configfile -v 9 #--tkr $TKR_VERSION # --dry-run > ~/workload-clusters/$CLUSTER_NAME-dryrun.yaml
     printf "\n\nDONE.\n\n\n"
 
