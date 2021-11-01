@@ -173,6 +173,28 @@ then
     fuser -k 443/tcp
        
 
+    if [[ -n $BASTION_HOST ]]
+    then
+        printf "\nBastion host detected...\n"
+        printf "\nAdjusting kubeconfig for $CLUSTER_NAME to work with bastion host...\n"
+        endpointipport=$(kubectl config view -o jsonpath='{.clusters[?(@.name == "'$CLUSTER_NAME'")].cluster.server}')
+        printf "\n\n$endpointipport\n\n"
+        proto="$(echo $endpointipport | grep :// | sed -e's,^\(.*://\).*,\1,g')"
+        serverurl="$(echo ${endpointipport/$proto/} | cut -d/ -f1)"
+        port="$(echo $serverurl | awk -F: '{print $2}')"
+        serverurl="$(echo $serverurl | awk -F: '{print $1}')"
+        if [[ -n $endpointipport ]]
+        then
+            printf "\nAdjusting kubeconfig for $CLUSTER_NAME for tunneling...\n"
+            sed -i '0,/'$serverurl'/s//kubernetes/' $kubeconfigfile
+            sleep 1
+            keyname=$(echo "$CLUSTER_NAME"_CLUSTER_ENDPOINT)
+            printf "\n$keyname=$serverurl:$port" >> /root/.env
+        else
+            printf "\nERROR: Adjusting kubeconfig for $CLUSTER_NAME. Please manually change the cluster endpoint to domain name 'kubernetes'...\n"
+        fi
+    fi
+
     printf "\n\n\n"
     printf "*******************\n"
     printf "***COMPLETE.....***\n"
