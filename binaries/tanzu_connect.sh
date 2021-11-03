@@ -1,3 +1,5 @@
+#!/bin/bash
+
 returnOrexit()
 {
     if [[ "${BASH_SOURCE[0]}" != "${0}" ]]
