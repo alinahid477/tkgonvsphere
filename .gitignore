@@ -38,3 +38,4 @@ binaries/*
 !binaries/bastionhostcleanup.sh
 workload-clusters/*
 !workload-clusters/.gitkeep
+Dockerfile
