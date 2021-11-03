@@ -16,11 +16,45 @@ printf "\nGetting remote files list from $BASTION_USERNAME@$BASTION_HOST\n"
 ssh -i .ssh/id_rsa $BASTION_USERNAME@$BASTION_HOST 'ls ~/merlin/tkgonvsphere/binaries' > /tmp/bastionhostbinaries.txt
 ssh -i .ssh/id_rsa $BASTION_USERNAME@$BASTION_HOST 'ls -a ~/merlin/tkgonvsphere/' > /tmp/bastionhosthomefiles.txt
 
-isexist=$(cat /tmp/bastionhostbinaries.txt | grep -w "tanzu-cli-bundle-linux-amd64.tar$")
+
+tanzubundlename=''
+printf "\nChecking tanzu bundle...\n\n"
+cd /tmp
+sleep 1
+numberoftarfound=$(find ./*tar* -type f -printf "." | wc -c)
+if [[ $numberoftarfound == 1 ]]
+then
+    tanzubundlename=$(find ./*tar* -printf "%f\n")
+fi
+if [[ $numberoftarfound -gt 1 ]]
+then
+    printf "\nfound more than 1 bundles..\n"
+    find ./*tar* -printf "%f\n"
+    while true; do
+        read -p "type the bundle name: " inp
+        if [ -n "$inp" ]
+        then
+            tanzubundlename=$inp
+            break
+        else
+            printf "\nYou must provide a value.\n"
+        fi
+    done
+fi
+
+if [[ $numberoftarfound -lt 1 ]]
+then
+    printf "\nNo tanzu bundle found. Please place the tanzu bindle in ~/binaries and rebuild again. Exiting...\n"
+    exit 1
+fi
+printf "\nTanzu Bundle: $tanzubundlename."
+cd ~
+
+isexist=$(cat /tmp/bastionhostbinaries.txt | grep -w $tanzubundlename)
 if [[ -z $isexist ]]
 then
-    printf "\nUploading tanzu-cli-bundle-linux-amd64.tar\n"
-    scp ~/binaries/tanzu-cli-bundle-linux-amd64.tar $BASTION_USERNAME@$BASTION_HOST:~/merlin/tkgonvsphere/binaries/
+    printf "\nUploading $tanzubundlename\n"
+    scp ~/binaries/$tanzubundlename $BASTION_USERNAME@$BASTION_HOST:~/merlin/tkgonvsphere/binaries/
 fi
 
 isexist=$(cat /tmp/bastionhostbinaries.txt | grep -w "bastionhostinit.sh$")

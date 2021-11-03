@@ -1,5 +1,14 @@
 #!/bin/bash
-export $(cat /root/.env | xargs)
+
+returnOrexit()
+{
+    if [[ "${BASH_SOURCE[0]}" != "${0}" ]]
+    then
+        return
+    else
+        exit
+    fi
+}
 
 helpFunction()
 {
@@ -9,6 +18,28 @@ helpFunction()
     echo -e "\t-f /path/to/configfile"
     exit 1 # Exit script after printing help
 }
+
+export $(cat /root/.env | xargs)
+
+$isexist=$(ls /tmp/TANZU_CONNECT)
+if [[ -n $isexist ]]
+then
+    export $(cat /tmp/TANZU_CONNECT | xargs)
+fi
+
+if [[ -z $TANZU_CONNECT ]]
+then
+    source ~/binaries/tanzu_connect.sh
+    sleep 2
+    $isexist=$(ls /tmp/TANZU_CONNECT)
+    if [[ -z $isexist ]]
+    then
+        returnOrexit
+    fi
+fi
+
+
+
 unset configfile
 unset clustername
 while getopts "f:n:" opt

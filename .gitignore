@@ -27,6 +27,7 @@ binaries/*
 !binaries/tkginstall.sh
 !binaries/tkgworkloadwizard.sh
 !binaries/adjustdns.sh
+!binaries/tanzu_connect.sh
 !binaries/attach_to_tmc.sh
 !binaries/init.sh
 !binaries/Dockerfile.tce0.9.1

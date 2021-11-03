@@ -46,7 +46,7 @@ COPY binaries/tce-linux-amd64-v${TANZU_CLI_VERSION}.tar.gz /tmp/
 RUN cd /tmp && mkdir tanzu \
 	&& tar -xvf tce-linux-amd64-v${TANZU_CLI_VERSION}.tar.gz -C tanzu/ \
 	&& cd /tmp/tanzu/tce-linux-amd64-v${TANZU_CLI_VERSION} \
-	&& ./install.sh
+	&& install /tmp/tanzu/tce-linux-amd64-v${TANZU_CLI_VERSION}/bin/tanzu /usr/local/bin/tanzu
 	
 COPY binaries/init.sh /usr/local/init.sh
 RUN chmod +x /usr/local/init.sh

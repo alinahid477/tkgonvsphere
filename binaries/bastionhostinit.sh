@@ -2,20 +2,59 @@
 
 install_tanzu_plugin()
 {
-    printf "\nChecking tanzu unpacked...\n\n"
-    isexists=$(ls /tmp/tanzu | grep -w "cli$")
-    if [[ -z $isexists ]]
+    tanzubundlename=''
+    printf "\nChecking tanzu bundle...\n\n"
+    cd /tmp
+    sleep 1
+    numberoftarfound=$(find ./*tar* -type f -printf "." | wc -c)
+    if [[ $numberoftarfound == 1 ]]
     then
-        printf "\nError: Bundle ~/binaries/tanzu-cli-bundle-linux-amd64.tar not found. Exiting..\n"
-        exit        
+        tanzubundlename=$(find ./*tar* -printf "%f\n")
     fi
-    cd ~
-    printf "\ntanzu plugin install...\n"
-    tanzu plugin install --local /tmp/tanzu/cli all
+    if [[ $numberoftarfound -gt 1 ]]
+    then
+        printf "\nfound more than 1 bundles..\n"
+        find ./*tar* -printf "%f\n"
+        while true; do
+            read -p "type the bundle name: " inp
+            if [ -n "$inp" ]
+            then
+                tanzubundlename=$inp
+                break
+            else
+                printf "\nYou must provide a value.\n"
+            fi
+        done
+    fi
+
+    if [[ $numberoftarfound -lt 1 ]]
+    then
+        printf "\nNo tanzu bundle found. Please place the tanzu bindle in ~/binaries and rebuild again. Exiting...\n"
+        exit 1
+    fi
+    printf "\nTanzu Bundle: $tanzubundlename. Installing..."
+    # sleep 1
+    # mkdir tanzu
+    # tar -xvf $tanzubundlename -C tanzu/
+
+    if [[ $tanzubundlename == "tce"* ]]
+    then
+        cd /tmp/tanzu/
+        tcefolder=$(ls | grep tce)
+        cd $tcefolder
+        export ALLOW_INSTALL_AS_ROOT=true
+        ./install.sh
+    else
+        cd /tmp/tanzu/cli/core
+        versionfolder=$(ls | grep v)
+        cd $versionfolder
+        install core/$versionfolder/tanzu-core-linux_amd64 /usr/local/bin/tanzu
+        tanzu plugin install --local /tmp/tanzu/cli all
+    fi    
 }
 
-ISINSTALLED=$(tanzu management-cluster --help)
-if [[ $ISINSTALLED == *@("unknown"|"does not exist")* ]]
+ISINSTALLED=$(find ~/.local/share/tanzu-cli/* -printf '%f\n' | grep management-cluster))
+if [[ -z $ISINSTALLED ]]
 then
     printf "\n\ntanzu plugin management-cluster not found. installing...\n\n"
     install_tanzu_plugin
