@@ -29,7 +29,8 @@ binaries/*
 !binaries/adjustdns.sh
 !binaries/attach_to_tmc.sh
 !binaries/init.sh
-!binaries/Dockerfile
+!binaries/Dockerfile.tce0.9.1
+!binaries/Dockerfile.tkg1.4
 !binaries/.dockerignore
 !binaries/bastionhostinit.sh
 !binaries/bastionhostrun.sh
