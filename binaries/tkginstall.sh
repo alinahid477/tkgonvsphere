@@ -35,7 +35,7 @@ printf "\n***************************************************"
 
 
 
-if [ -z "$COMPLETE" ]
+if [[ -z $COMPLETE || $COMPLETE == 'NO' ]]
 then
 
     printf "\n\n\n"
@@ -117,6 +117,7 @@ then
     # fi
 
     printf "\n\n\nDone. Marking as commplete.\n\n\n"
+    sed -i '/COMPLETE=NO/d' .env
     printf "\nCOMPLETE=YES" >> /root/.env
 else
     printf "\n\n\n Already marked as complete in the .env. If this is not desired then remove the 'COMPLETE=yes' from the .env file.\n"
