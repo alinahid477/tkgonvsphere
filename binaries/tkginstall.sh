@@ -24,7 +24,7 @@ returnOrexit()
 }
 
 
-
+unset TKG_ADMIN_EMAIL
 
 export $(cat /root/.env | xargs)
 
@@ -40,35 +40,30 @@ then
 
     printf "\n\n\n"
     
-    while [[ -z $TKG_ADMIN_EMAIL ]]; do
-        printf "\nTKG_ADMIN_EMAIL not set in the .env file."
-        printf "\nPlease add TKG_ADMIN_EMAIL={email} in the .env file"
-        printf "\nReplace {email} with an appropriate value"
-        printf "\n"
-        if [[ $SILENTMODE == 'y' ]]
-        then
-            returnOrexit
-        fi
-        isexists=$(cat /root/.env | grep -w TKG_ADMIN_EMAIL)
-        if [[ -z $isexists ]]
-        then
-            printf "\nTKG_ADMIN_EMAIL=" >> /root/.env
-        fi
-        while true; do
-            read -p "Confirm to continue? [y/n] " yn
-            case $yn in
-                [Yy]* ) printf "\nyou confirmed yes\n"; break;;
-                [Nn]* ) printf "\n\nYou said no. \n\nQuiting...\n\n"; returnOrexit;;
-                * ) echo "Please answer yes or no.";;
-            esac
-        done
-        export $(cat /root/.env | xargs)
-    done
-
-    
     isexists=$(ls .ssh/tkg_rsa.pub)
     if [[ -z $isexists ]]
     then
+        while [[ -z $TKG_ADMIN_EMAIL ]]; do
+            printf "\nTKG_ADMIN_EMAIL not set in the .env file."
+            printf "\n"
+            if [[ $SILENTMODE == 'y' ]]
+            then
+                returnOrexit
+            fi
+            while true; do
+                read -p "TKG_ADMIN_EMAIL: " inp
+                if [ -z "$inp" ]
+                then
+                    printf "\nThis is required.\n"
+                else 
+                    TKG_ADMIN_EMAIL=$inp
+                    break;
+                fi
+            done        
+            printf "\nTKG_ADMIN_EMAIL=$TKG_ADMIN_EMAIL" >> /root/.env
+            
+            export $(cat /root/.env | xargs)
+        done
         printf "\n\n\nexecuting ssh-keygen for email $TKG_ADMIN_EMAIL...\n"
         ssh-keygen -f ~/.ssh/tkg_rsa -t rsa -b 4096 -C "$TKG_ADMIN_EMAIL"
     else 
