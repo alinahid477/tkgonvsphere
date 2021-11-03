@@ -90,8 +90,8 @@ then
 
     sed -i '$ d' $configfile
 
-
-    if [[ -n $BASTION_HOST ]]
+    doshuttle='n'
+    if [[ -n $BASTION_HOST && $doshuttle == 'n' ]]
     then
         printf "\n\nBastion host detected\n"
         sleep 1
@@ -141,7 +141,7 @@ then
         fi
         if [[ -n $VSPHERE_SERVER_IP ]]
         then
-            printf "\nestablish tunnel for $VSPHERE_SERVER_IP\n"
+            printf "\nestablish tunnel for $VSPHERE_SERVER_IP on 443\n"
             sleep 1
             printf "127.0.0.1 $VSPHERE_SERVER\n" >> /etc/hosts
             ssh -i /root/.ssh/id_rsa -4 -fNT -L 443:$VSPHERE_SERVER_IP:443 $BASTION_USERNAME@$BASTION_HOST
