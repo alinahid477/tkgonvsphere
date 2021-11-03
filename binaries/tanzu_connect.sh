@@ -117,7 +117,8 @@ function bastion_host_tunnel {
 
 if [[ -n $BASTION_HOST ]]
 then
-    $isexists=$(ls /root/.ssh/id_rsa)
+    isexists=$(ls ~/.ssh/id_rsa)
+    printf "it is: $isexists"
     if [[ -z $isexists ]]
     then
         printf "\nERROR: Bastion host parameter supplied BUT no id_rsa file present in .ssh\n"
@@ -207,7 +208,7 @@ then
     while true; do
         read -p "Confirm to continue? [y/n] " yn
         case $yn in
-            [Yy]* ) printf "\nyou confirmed yes\n"; echo "TANZU_CONNECT=YES" > /tmp/TANZU_CONNECT;;
+            [Yy]* ) printf "\nyou confirmed yes\n"; echo "TANZU_CONNECT=YES" >> /tmp/TANZU_CONNECT; break;;
             [Nn]* ) printf "\n\nYou said no. \n\nExiting...\n\n"; returnOrexit;;
             * ) echo "Please answer yes or no.";;
         esac

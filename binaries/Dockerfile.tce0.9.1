@@ -19,6 +19,7 @@ ENV TANZU_CLI_VERSION=0.9.1
 RUN apt-get update && apt-get install -y \
 	apt-transport-https \
 	ca-certificates \
+	openssh-client \
 	curl \
 	unzip \
 	&& curl -L https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl \

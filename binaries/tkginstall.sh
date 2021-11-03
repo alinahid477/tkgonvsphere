@@ -81,10 +81,10 @@ then
     then
         echo "=> Bastion host detected."
 
-        printf "\n\nPerforming ssh-add ~/.ssh/id_rsa ...\n"
-        eval `ssh-agent -s`
-        ssh-add /root/.ssh/id_rsa
-        printf "\nADDED.\n"
+        # printf "\n\nPerforming ssh-add ~/.ssh/id_rsa ...\n"
+        # eval `ssh-agent -s`
+        # ssh-add /root/.ssh/id_rsa
+        # printf "\nADDED.\n"
 
         source /root/binaries/bastionhostsetup.sh
     else

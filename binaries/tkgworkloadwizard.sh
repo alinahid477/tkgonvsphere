@@ -21,7 +21,7 @@ helpFunction()
 
 export $(cat /root/.env | xargs)
 
-$isexist=$(ls /tmp/TANZU_CONNECT)
+isexist=$(ls /tmp/TANZU_CONNECT)
 if [[ -n $isexist ]]
 then
     export $(cat /tmp/TANZU_CONNECT | xargs)
@@ -31,7 +31,7 @@ if [[ -z $TANZU_CONNECT ]]
 then
     source ~/binaries/tanzu_connect.sh
     sleep 2
-    $isexist=$(ls /tmp/TANZU_CONNECT)
+    isexist=$(ls /tmp/TANZU_CONNECT)
     if [[ -z $isexist ]]
     then
         returnOrexit
@@ -54,7 +54,7 @@ done
 if [ -z "$configfile" ] 
 then
     printf "no config file path.\n"
-    if [ -z "$clustername" ] 
+    if [[ -z $clustername ]] 
     then
         printf "no clustername given.\n"
         helpFunction
@@ -217,7 +217,7 @@ then
         if [[ -n $endpointipport ]]
         then
             printf "\nAdjusting kubeconfig for $CLUSTER_NAME for tunneling...\n"
-            sed -i '0,/'$serverurl'/s//kubernetes/' $kubeconfigfile
+            sed -i '0,/'$serverurl'/s//kubernetes/' /root/.kube/config
             sleep 1
             keyname=$(echo "$CLUSTER_NAME"_CLUSTER_ENDPOINT)
             printf "\n$keyname=$serverurl:$port" >> /root/.env

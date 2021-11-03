@@ -15,11 +15,11 @@ fi
 
 printf "\n\nLooking for management cluster config at: ~/.config/tanzu/tkg/clusterconfigs/\n"
 mgmtconfigfile=$(ls ~/.config/tanzu/tkg/clusterconfigs/ | awk -v i=1 -v j=1 'FNR == i {print $j}')
-printf "\n\nRequired management cluster config file: $mgmtconfigfile\n"
+printf "\n\nFound management cluster config file: $mgmtconfigfile\n"
 if [[ ! -z $mgmtconfigfile ]]
 then
     mgmtconfigfile=~/.config/tanzu/tkg/clusterconfigs/$mgmtconfigfile 
-    echo "" > ~/workload-clusters/tmp.yaml
+    echo "" >> ~/workload-clusters/tmp.yaml
     chmod 777 ~/workload-clusters/tmp.yaml
     while IFS=: read -r key val
     do

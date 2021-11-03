@@ -1,7 +1,15 @@
 #!/bin/bash
 export $(cat /root/.env | xargs)
 
-
+returnOrexit()
+{
+    if [[ "${BASH_SOURCE[0]}" != "${0}" ]]
+    then
+        return
+    else
+        exit
+    fi
+}
 
 printf "\nPreparing $BASTION_USERNAME@$BASTION_HOST for merlin\n"
 
@@ -10,6 +18,7 @@ if [[ -z $isexist ]]
 then
     printf "\nCreating directory 'merlin' in $BASTION_USERNAME@$BASTION_HOST home dir"
     ssh -i .ssh/id_rsa $BASTION_USERNAME@$BASTION_HOST 'mkdir -p merlin/tkgonvsphere/binaries'
+    ssh -i .ssh/id_rsa $BASTION_USERNAME@$BASTION_HOST 'mkdir -p merlin/tkgonvsphere/.ssh'
 fi
 
 printf "\nGetting remote files list from $BASTION_USERNAME@$BASTION_HOST\n"
@@ -91,6 +100,12 @@ then
     scp $MANAGEMENT_CLUSTER_CONFIG_FILE $BASTION_USERNAME@$BASTION_HOST:~/merlin/tkgonvsphere/
 fi
 
+isexist=$(ls ~/.ssh/tkg_rsa)
+if [[ -n $isexist ]]
+then
+    printf "\nUploading .ssh/tkg_rsa\n"
+    scp ~/.ssh/tkg_rsa $BASTION_USERNAME@$BASTION_HOST:~/merlin/tkgonvsphere/.ssh/id_rsa
+fi
 
 printf "\nStarting remote docker with tanzu cli...\n"
 ssh -i .ssh/id_rsa $BASTION_USERNAME@$BASTION_HOST 'chmod +x ~/merlin/tkgonvsphere/bastionhostrun.sh && merlin/tkgonvsphere/bastionhostrun.sh '$DOCKERHUB_USERNAME $DOCKERHUB_PASSWORD
@@ -114,8 +129,32 @@ fi
 printf "\nUsing remote context...\n"
 export DOCKER_CONTEXT='bastionhostdocker'
 
+printf "\nWaiting 3s before checking remote container...\n"
+sleep 3
+
 printf "\nChecking remote context...\n"
 docker ps
+isexist=$(docker ps --filter "name=merlintkgonvsphere" --format "{{.Names}}")
+if [[ -z $isexist ]]
+then
+    count=1
+    while [[ -z $isexist && $count -lt 4 ]]; do
+        printf "\nContainer not running... Retrying in 5s"
+        sleep 5
+        isexist=$(docker ps --filter "name=merlintkgonvsphere" --format "{{.Names}}")
+        ((count=count+1))
+    done
+fi
+if [[ -z $isexist ]]
+then
+    printf "\nERROR: Remote container merlintkgonvsphere not running."
+    printf "\nUnable to proceed further. Please check merling directory in your bastion host."
+    returnOrexit
+fi
+
+
+printf "\nPerforming ssh-add...\n"
+docker exec -idt merlintkgonvsphere bash -c "cd ~ ; ssh-add ~/.ssh/id_rsa"
 
 printf "\nStarting tanzu in remote context...\n"
 if [[ -n $MANAGEMENT_CLUSTER_CONFIG_FILE ]]
@@ -346,6 +385,7 @@ printf "\nNecessary files are downloaded on your local (this docker container) d
 printf "\nThus you have copy of the required files in your local so it is safe to delete the remote files."
 printf "\nHowever, If you have enough space on the bastion host you may choose keep these files on the bastion host, just in case."
 printf "\nYou may also choose to delete these files."
+printf "\n\n"
 isremoveremotefiles='n'
 while true; do
     read -p "Would you like to remove Tanzu CLI files from bastion host? [yn]: " yn
