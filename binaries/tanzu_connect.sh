@@ -70,7 +70,7 @@ function bastion_host_tunnel {
             then
                 printf "server url: $serverurl\nport: $port\n"
                 sleep 1
-                printf "\nCreating endpoint Tunnel through bastion $BASTION_USERNAME@$BASTION_HOST ...\n"
+                printf "\nCreating endpoint Tunnel $port:$serverurl:$port through bastion $BASTION_USERNAME@$BASTION_HOST ...\n"
                 sleep 1
                 ssh -i /root/.ssh/id_rsa -4 -fNT -L $port:$serverurl:$port $BASTION_USERNAME@$BASTION_HOST
                 # ssh -i /root/.ssh/id_rsa -4 -fNT -L 443:$serverurl:443 $BASTION_USERNAME@$BASTION_HOST
@@ -80,6 +80,11 @@ function bastion_host_tunnel {
                 then
                     printf "\nAdjusting kubeconfig for tunneling...\n"
                     sed -i '0,/'$serverurl'/s//kubernetes/' $kubeconfigfile
+                    isexist=$(ls ~/.kube/config)
+                    if [[ -n $isexist ]]
+                    then
+                        sed -i '0,/'$serverurl'/s//kubernetes/' ~/.kube/config
+                    fi
                     sleep 1
                     printf "\nMANAGEMENT_CLUSTER_ENDPOINT=$serverurl:$port" >> /root/.env
                 fi

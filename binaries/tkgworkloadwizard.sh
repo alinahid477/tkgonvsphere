@@ -19,6 +19,23 @@ helpFunction()
     exit 1 # Exit script after printing help
 }
 
+function parse_yaml {
+   local prefix=$2
+   local s='[[:space:]]*' w='[a-zA-Z0-9_]*' fs=$(echo @|tr @ '\034')
+   sed -ne "s|^\($s\):|\1|" \
+        -e "s|^\($s\)\($w\)$s:$s[\"']\(.*\)[\"']$s\$|\1$fs\2$fs\3|p" \
+        -e "s|^\($s\)\($w\)$s:$s\(.*\)$s\$|\1$fs\2$fs\3|p"  $1 |
+   awk -F$fs '{
+      indent = length($1)/2;
+      vname[indent] = $2;
+      for (i in vname) {if (i > indent) {delete vname[i]}}
+      if (length($3) > 0) {
+         vn=""; for (i=0; i<indent; i++) {vn=(vn)(vname[i])("_")}
+         printf("%s%s%s=\"%s\"\n", "'$prefix'",vn, $2, $3);
+      }
+   }'
+}
+
 export $(cat /root/.env | xargs)
 
 isexist=$(ls /tmp/TANZU_CONNECT)
@@ -38,6 +55,25 @@ then
     fi
 fi
 
+if [[ -n $BASTION_HOST && -n $MANAGEMENT_CLUSTER_ENDPOINT ]]
+then
+    isexist=$(ls ~/.kube/config)
+    if [[ -n $isexist && ! $MANAGEMENT_CLUSTER_ENDPOINT =~ "kubernetes:" ]]
+    then
+        isexist=$(parse_yaml ~/.kube/config | grep "$MANAGEMENT_CLUSTER_ENDPOINT" | awk -F= '$1=="clusters__server" {print $2}' | xargs)
+        if [[ -n $isexist ]]
+        then
+            printf "\nBastion host detected, but kubeconfig file contains $MANAGEMENT_CLUSTER_ENDPOINT\nAdjusting kubeconfig....\n"
+            proto="$(echo $MANAGEMENT_CLUSTER_ENDPOINT | grep :// | sed -e's,^\(.*://\).*,\1,g')"
+            serverurl="$(echo ${MANAGEMENT_CLUSTER_ENDPOINT/$proto/} | cut -d/ -f1)"
+            port="$(echo $serverurl | awk -F: '{print $2}')"
+            serverurl="$(echo $serverurl | awk -F: '{print $1}')"
+            sed -i '0,/'$serverurl'/s//kubernetes/' ~/.kube/config
+            sleep 1
+            printf "\n==> Done.\n"
+        fi
+    fi
+fi
 
 
 unset configfile
@@ -128,13 +164,14 @@ then
         sleep 1
         if [[ $VSPHERE_SERVER =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+[\:0-9]*$ && -z $VSPHERE_SERVER_IP ]]
         then
-            echo "\nVSPHERE_SERVER=$VSPHERE_SERVER is an ip.\nGoing to use this for VSPHERE_SERVER_IP..."
+            printf "\nVSPHERE_SERVER=$VSPHERE_SERVER is an ip.\nGoing to use this for VSPHERE_SERVER_IP..."
             foundvsphereip=$VSPHERE_SERVER
         fi
         if [[ -z $foundvsphereip && -z $VSPHERE_SERVER_IP ]]
         then
-            printf "\nNo vsphere server ip detected for $VSPHERE_SERVER.\nextracting VSPHERE_SERVER_IP..."
+            printf "\nNo vsphere server ip detected for $VSPHERE_SERVER.\nextracting VSPHERE_SERVER_IP...\n"
             echo "=> Establishing sshuttle with remote $BASTION_USERNAME@$BASTION_HOST...."
+            sleep 1
             sshuttle --dns --python python2 -D -r $BASTION_USERNAME@$BASTION_HOST 0/0 -x $BASTION_HOST/32 --disable-ipv6 --listen 0.0.0.0:0
             echo "=> DONE."
             printf "\nextracting VSPHERE_SERVER_IP...\n"
@@ -166,7 +203,7 @@ then
         if [[ -n $foundvsphereip && -z $VSPHERE_SERVER_IP ]]
         then
             VSPHERE_SERVER_IP=$foundvsphereip
-            echo "\nrecording VSPHERE_SERVER_IP=$VSPHERE_SERVER in .env file\n"
+            printf "\nrecording VSPHERE_SERVER_IP=$VSPHERE_SERVER in .env file\n"
             printf "\nVSPHERE_SERVER_IP=$VSPHERE_SERVER_IP" >> /root/.env
             sleep 1
         fi
@@ -182,6 +219,7 @@ then
             echo "\nERROR: When bastion host is enabled you must provide VSPHERE_SERVER_IP\nexiting....\n"
             exit 1
         fi
+        
     fi
 
     printf "Creating k8s cluster from yaml called ~/workload-clusters/$CLUSTER_NAME.yaml\n\n"
