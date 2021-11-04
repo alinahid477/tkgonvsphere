@@ -1,9 +1,11 @@
 #!/bin/bash
-
+export $(cat /root/.env | xargs)
+returned='n'
 returnOrexit()
 {
     if [[ "${BASH_SOURCE[0]}" != "${0}" ]]
     then
+        returned='y'
         return
     else
         exit
@@ -114,6 +116,10 @@ function bastion_host_tunnel {
     fi
 }
 
+if [[ $returned == 'y' ]]
+then
+    returnOrexit
+fi
 
 if [[ -n $BASTION_HOST ]]
 then
@@ -125,12 +131,20 @@ then
         sleep 1
         printf "\nPlease place a id_rsa file in ~/.ssh dir"
         printf "\nQuiting...\n\n"
-        returnOrexit
+
+        exit 3
+    else
+        chmod 600 /root/.ssh/id_rsa
     fi
-    chmod 600 /root/.ssh/id_rsa
 fi
 
-if [[ $COMPLETE == 'YES' ]]
+if [[ $returned == 'y' ]]
+then
+    returnOrexit
+fi
+
+
+if [[ $COMPLETE == 'YES' && $returned == 'n' ]]
 then
     isloggedin='n'
     printf "\nFound marked as complete.\nChecking tanzu config...\n"
@@ -146,14 +160,14 @@ then
             if [[ -n $tanzupath ]]
             then
                 bastion_host_tunnel $tanzupath
-                printf "\nFound \n\tcontext: $tanzucontext \n\tname: $tanzuname \n\tpath: $tanzupath\n.Performing Tanzu login..."
-                sleep 1
-                tanzu login --kubeconfig $tanzupath --context $tanzucontext --name $tanzuname
+                printf "\nFound \n\tcontext: $tanzucontext \n\tname: $tanzuname \n\tpath: $tanzupath\n"
+                # sleep 1
+                # tanzu login --kubeconfig $tanzupath --context $tanzucontext --name $tanzuname
                 isloggedin='y'
             fi
             if [[ -n $tanzuendpoint ]]
             then
-                printf "\nFound \n\tcontext: $tanzucontext \n\tname: $tanzuname \n\tendpoint: $tanzuendpoint\n.Performing Tanzu login..."
+                printf "\nFound \n\tcontext: $tanzucontext \n\tname: $tanzuname \n\tendpoint: $tanzuendpoint\nPerforming Tanzu login...\n"
                 sleep 1
                 tanzu login --endpoint $tanzuendpoint --context $tanzucontext --name $tanzuname
                 isloggedin='y'
@@ -209,7 +223,7 @@ then
         read -p "Confirm to continue? [y/n] " yn
         case $yn in
             [Yy]* ) printf "\nyou confirmed yes\n"; echo "TANZU_CONNECT=YES" >> /tmp/TANZU_CONNECT; break;;
-            [Nn]* ) printf "\n\nYou said no. \n\nExiting...\n\n"; returnOrexit;;
+            [Nn]* ) printf "\n\nYou said no. \n\nExiting...\n\n"; exit;;
             * ) echo "Please answer yes or no.";;
         esac
     done  

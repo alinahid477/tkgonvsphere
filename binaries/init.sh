@@ -148,6 +148,8 @@ echo -e "\t~/binaries/attach_to_tmc.sh --help"
 
 cd ~
 
+source ~/binaries/tanzu_connect.sh
+
 /bin/bash
 
 

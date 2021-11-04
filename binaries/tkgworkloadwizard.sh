@@ -34,7 +34,7 @@ then
     isexist=$(ls /tmp/TANZU_CONNECT)
     if [[ -z $isexist ]]
     then
-        returnOrexit
+        exit
     fi
 fi
 
