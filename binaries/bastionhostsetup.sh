@@ -22,8 +22,9 @@ then
 fi
 
 printf "\nGetting remote files list from $BASTION_USERNAME@$BASTION_HOST\n"
-ssh -i .ssh/id_rsa $BASTION_USERNAME@$BASTION_HOST 'ls ~/merlin/tkgonvsphere/binaries' > /tmp/bastionhostbinaries.txt
+ssh -i .ssh/id_rsa $BASTION_USERNAME@$BASTION_HOST 'ls ~/merlin/tkgonvsphere/binaries/' > /tmp/bastionhostbinaries.txt
 ssh -i .ssh/id_rsa $BASTION_USERNAME@$BASTION_HOST 'ls -a ~/merlin/tkgonvsphere/' > /tmp/bastionhosthomefiles.txt
+ssh -i .ssh/id_rsa $BASTION_USERNAME@$BASTION_HOST 'ls -a ~/merlin/tkgonvsphere/.ssh/' > /tmp/bastionhosthomefiles.txt
 
 
 tanzubundlename=''
@@ -101,7 +102,8 @@ then
 fi
 
 isexist=$(ls ~/.ssh/tkg_rsa)
-if [[ -n $isexist ]]
+isexistidrsa=$(cat /tmp/bastionhosthomefiles.txt | grep -w "id_rsa$")
+if [[ -n $isexist && -z $isexistidrsa ]]
 then
     printf "\nUploading .ssh/tkg_rsa\n"
     scp ~/.ssh/tkg_rsa $BASTION_USERNAME@$BASTION_HOST:~/merlin/tkgonvsphere/.ssh/id_rsa
