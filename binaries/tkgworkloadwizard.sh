@@ -130,12 +130,18 @@ else
     CONTROL_PLANE_MACHINE_COUNT=$(cat $configfile | sed -r 's/[[:alnum:]]+=/\n&/g' | awk -F: '$1=="CONTROL_PLANE_MACHINE_COUNT"{print $2}' | xargs)
     WORKER_MACHINE_COUNT=$(cat $configfile | sed -r 's/[[:alnum:]]+=/\n&/g' | awk -F: '$1=="WORKER_MACHINE_COUNT"{print $2}' | xargs)
     VSPHERE_SERVER=$(cat $configfile | sed -r 's/[[:alnum:]]+=/\n&/g' | awk -F: '$1=="VSPHERE_SERVER"{print $2}' | xargs)
+    VSPHERE_CONTROL_PLANE_ENDPOINT=$(cat $configfile | sed -r 's/[[:alnum:]]+=/\n&/g' | awk -F: '$1=="VSPHERE_CONTROL_PLANE_ENDPOINT"{print $2}' | xargs)
+    
     printf "\n below information were extracted from the file supplied:\n"
     printf "\nCLUSTER_NAME=$CLUSTER_NAME"
     printf "\nCLUSTER_PLAN=$CLUSTER_PLAN"
     printf "\nCONTROL_PLANE_MACHINE_COUNT=$CONTROL_PLANE_MACHINE_COUNT"
     printf "\nWORKER_MACHINE_COUNT=$WORKER_MACHINE_COUNT"
     printf "\nVSPHERE_SERVER=$VSPHERE_SERVER"
+    if [[ -n $VSPEHRE_CONTROL_PLANE_ENDPOINT ]]
+    then
+        printf "\nVSPEHRE_CONTROL_PLANE_ENDPOINT=$VSPEHRE_CONTROL_PLANE_ENDPOINT"
+    fi
     printf "\n\n\n"
     while true; do
         read -p "Confirm if the information is correct? [y/n] " yn
@@ -188,7 +194,7 @@ then
         fi
         if [[ -z $foundvsphereip && -z $VSPHERE_SERVER_IP ]]
         then
-            echo "\nFailed to extract VSPHERE_SERVER_IP for $VSPHERE_SERVER.\nrequire user input..."
+            printf "\nFailed to extract VSPHERE_SERVER_IP for $VSPHERE_SERVER.\nrequire user input..."
             while true; do
                 read -p "VSPHERE_SERVER_IP: " inp
                 if [ -z "$inp" ]
@@ -231,23 +237,26 @@ then
     # kubectl apply -f ~/workload-clusters/$CLUSTER_NAME-dryrun.yaml
     # printf "\n\nDONE.\n\n\n"
 
-    printf "\nWaiting 1 mins to complete cluster create\n"
-    sleep 1m
+    printf "\nWaiting 20s to complete cluster create\n"
+    sleep 20
     printf "\n\nDONE.\n\n\n"
 
     printf "\nGetting cluster info\n"
     tanzu cluster kubeconfig get $CLUSTER_NAME --admin
     printf "\n\nDONE.\n\n\n"
 
+    printf "\nStopping tunnel on 443 for $VSPHERE_SERVER_IP for $VSPHERE_SERVER...\n"
     fuser -k 443/tcp
-       
+    sleep 1
+    printf "==>DONE\n"
 
     if [[ -n $BASTION_HOST ]]
     then
         printf "\nBastion host detected...\n"
         printf "\nAdjusting kubeconfig for $CLUSTER_NAME to work with bastion host...\n"
+        sleep 1
         endpointipport=$(kubectl config view -o jsonpath='{.clusters[?(@.name == "'$CLUSTER_NAME'")].cluster.server}')
-        printf "\n\n$endpointipport\n\n"
+        printf "==>extracted endpoint: $endpointipport\n"
         proto="$(echo $endpointipport | grep :// | sed -e's,^\(.*://\).*,\1,g')"
         serverurl="$(echo ${endpointipport/$proto/} | cut -d/ -f1)"
         port="$(echo $serverurl | awk -F: '{print $2}')"
@@ -262,6 +271,7 @@ then
         else
             printf "\nERROR: Adjusting kubeconfig for $CLUSTER_NAME. Please manually change the cluster endpoint to domain name 'kubernetes'...\n"
         fi
+        printf "==>DONE\n"
     fi
 
     printf "\n\n\n"

@@ -151,7 +151,7 @@ if [[ -z $isexist ]]
 then
     printf "\nERROR: Remote container merlintkgonvsphere not running."
     printf "\nUnable to proceed further. Please check merling directory in your bastion host."
-    returnOrexit
+    exit
 fi
 
 

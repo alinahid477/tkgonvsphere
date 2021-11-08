@@ -13,6 +13,12 @@ then
     exit 1
 fi
 
+unset CLUSTER_PLAN
+unset ENABLE_MHC
+unset CLUSTER_CIDR
+unset SERVICE_CIDR
+unset AVI_CONTROL_PLANE_HA_PROVIDER
+
 printf "\n\nLooking for management cluster config at: ~/.config/tanzu/tkg/clusterconfigs/\n"
 mgmtconfigfile=$(ls ~/.config/tanzu/tkg/clusterconfigs/ | awk -v i=1 -v j=1 'FNR == i {print $j}')
 printf "\n\nFound management cluster config file: $mgmtconfigfile\n"
@@ -23,9 +29,12 @@ then
     chmod 777 ~/workload-clusters/tmp.yaml
     while IFS=: read -r key val
     do
-        if [[ $key == *@("VSPHERE"|"TKG_HTTP_PROXY_ENABLED"|"AVI_CONTROL_PLANE_HA_PROVIDER"|"IDENTITY_MANAGEMENT_TYPE"|"ENABLE_AUDIT_LOGGING"|"INFRASTRUCTURE_PROVIDER"|"ENABLE_CEIP_PARTICIPATION"|"ENABLE_DEFAULT_STORAGE_CLASS")* ]]
+        if [[ $key == *@("VSPHERE"|"TKG_HTTP_PROXY_ENABLED"|"IDENTITY_MANAGEMENT_TYPE"|"ENABLE_AUDIT_LOGGING"|"INFRASTRUCTURE_PROVIDER"|"ENABLE_CEIP_PARTICIPATION"|"ENABLE_DEFAULT_STORAGE_CLASS"|"LDAP_"|"OIDC_")* ]]
         then
-            printf "$key: $(echo $val | sed 's,^ *,,; s, *$,,')\n" >> ~/workload-clusters/tmp.yaml          
+            if [[ "$key" != @("VSPHERE_CONTROL_PLANE_"|"VSPHERE_WORKER_"|"VSPHERE_TLS_THUMBPRINT") ]]
+            then
+                printf "$key: $(echo $val | sed 's,^ *,,; s, *$,,')\n" >> ~/workload-clusters/tmp.yaml          
+            fi
         fi
         
         if [[ $key == *"CLUSTER_PLAN"* ]]
@@ -47,32 +56,69 @@ then
             SERVICE_CIDR=$(echo $val | sed 's,^ *,,; s, *$,,')
         fi
 
+        if [[ $key == *"AVI_CONTROL_PLANE_HA_PROVIDER"* ]]
+        then
+            AVI_CONTROL_PLANE_HA_PROVIDER=$(echo $val | sed 's,^ *,,; s, *$,,')
+            # needed to catch this value for the if condition for VSPEHRE_CONTROL_PLANE_ENDPOINT input
+            printf "AVI_CONTROL_PLANE_HA_PROVIDER: $AVI_CONTROL_PLANE_HA_PROVIDER\n" >> ~/workload-clusters/tmp.yaml
+        fi
+
+        if [[ $key == "VSPHERE_TLS_THUMBPRINT" ]]
+        then
+            VSPHERE_TLS_THUMBPRINT=$(echo $val | sed 's,^ *,,; s, *$,,')
+            # needed to catch this value to chech the below and if present also append VSPHERE_INSECURE: false
+            if [[ -n $VSPHERE_TLS_THUMBPRINT ]]
+            then
+                printf "VSPHERE_TLS_THUMBPRINT: $VSPHERE_TLS_THUMBPRINT\n" >> ~/workload-clusters/tmp.yaml
+                printf "VSPHERE_INSECURE: false\n" >> ~/workload-clusters/tmp.yaml
+            else
+                printf "VSPHERE_INSECURE: true\n" >> ~/workload-clusters/tmp.yaml
+            fi
+        fi
         # echo "key=$key --- val=$(echo $val | sed 's,^ *,,; s, *$,,')"
     done < "$mgmtconfigfile"
+
+    printf "\ncluster name accepted: $CLUSTER_NAME"
+    printf "CLUSTER_NAME: $CLUSTER_NAME\n" >> ~/workload-clusters/tmp.yaml
+    printf "\n\n"
 
     printf "\n\nFew additional input required\n\n"
 
 
-    while true; do
-        read -p "CLUSTER_NAME:(press enter to keep value extracted from parameter \"$clustername\") " inp
-        if [ -z "$inp" ]
-        then
-            CLUSTER_NAME=$clustername
-        else 
-            CLUSTER_NAME=$inp
-        fi
-        if [ -z "$CLUSTER_NAME" ]
-        then 
-            printf "\nThis is a required field.\n"
-        else
-            printf "\ncluster name accepted: $CLUSTER_NAME"
-            printf "CLUSTER_NAME: $CLUSTER_NAME\n" >> ~/workload-clusters/tmp.yaml
-            break
-        fi
-    done
-    
 
-    printf "\n\n"
+    # while true; do
+    #     read -p "CLUSTER_NAME:(press enter to keep value extracted from parameter \"$clustername\") " inp
+    #     if [ -z "$inp" ]
+    #     then
+    #         CLUSTER_NAME=$clustername
+    #     else 
+    #         CLUSTER_NAME=$inp
+    #     fi
+    #     if [ -z "$CLUSTER_NAME" ]
+    #     then 
+    #         printf "\nThis is a required field.\n"
+    #     else
+    #         printf "\ncluster name accepted: $CLUSTER_NAME"
+    #         printf "CLUSTER_NAME: $CLUSTER_NAME\n" >> ~/workload-clusters/tmp.yaml
+    #         break
+    #     fi
+    # done
+    
+    vsphere7='y'
+    while true; do
+        read -p "Are you deploying on vSphere7? [y/n] " yn
+        case $yn in
+            [Yy]* ) vsphere7='y'; printf "you said yes.\n"; break;;
+            [Nn]* ) vsphere7='n'; printf "You said no.\n"; break;;
+            * ) echo "Please answer yes[y] or no[n].";;
+        esac
+    done
+    if [[ $vsphere7 == 'y' ]]
+    then
+        printf "DEPLOY_TKG_ON_VSPHERE7: \"true\"\n" >> ~/workload-clusters/tmp.yaml
+    else
+        printf "DEPLOY_TKG_ON_VSPHERE7: \"false\"\n" >> ~/workload-clusters/tmp.yaml
+    fi
 
     read -p "CLUSTER_PLAN:(press enter to keep extracted default \"$CLUSTER_PLAN\") " inp
     if [ -z "$inp" ]
@@ -101,7 +147,7 @@ then
     fi
 
     while true; do
-        read -p "CONTROL_PLANE_MACHINE_COUNT:(press enter to keep extracted default \"$CONTROL_PLANE_MACHINE_COUNT\") " inp
+        read -p "CONTROL_PLANE_MACHINE_COUNT:(press enter to keep default \"$CONTROL_PLANE_MACHINE_COUNT\") " inp
         if [ -z "$inp" ]
         then
             inp=$CONTROL_PLANE_MACHINE_COUNT
@@ -116,7 +162,7 @@ then
     printf "CONTROL_PLANE_MACHINE_COUNT: $inp\n" >> ~/workload-clusters/tmp.yaml
     printf "\n\n"
     while true; do
-        read -p "WORKER_MACHINE_COUNT:(press enter to keep extracted default \"$WORKER_MACHINE_COUNT\") " inp
+        read -p "WORKER_MACHINE_COUNT:(press enter to keep default \"$WORKER_MACHINE_COUNT\") " inp
         if [ -z "$inp" ]
         then
             inp=$WORKER_MACHINE_COUNT
@@ -282,15 +328,50 @@ then
         printf "VSPHERE_WORKER_MEM_MIB: $inp\n" >> ~/workload-clusters/tmp.yaml
     fi
 
+
     while true; do
         read -p "Enable Machine Health Check (Default as per management cluster is: $ENABLE_MHC)? [y/n] " yn
         case $yn in
-            [Yy]* ) ENABLE_MHC='y'; printf "\nyou said yes.\n"; break;;
-            [Nn]* ) ENABLE_MHC='n'; printf "\nYou said no.\n"; break;;
+            [Yy]* ) ENABLE_MHC="true"; printf "You said yes.\n"; break;;
+            [Nn]* ) ENABLE_MHC="false"; printf "You said no.\n"; break;;
             * ) echo "Please answer yes[y] or no[n].";;
         esac
     done
+    printf "ENABLE_MHC: $ENABLE_MHC\n" >> ~/workload-clusters/tmp.yaml
     printf "\n\n"
+
+    read -p "CLUSTER_CIDR:(press enter to keep extracted default \"$CLUSTER_CIDR\") " inp
+    if [ -z "$inp" ]
+    then
+        inp=$CLUSTER_CIDR
+    fi
+    printf "CLUSTER_CIDR: $inp\n" >> ~/workload-clusters/tmp.yaml
+    printf "\n\n"
+    read -p "SERVICE_CIDR:(press enter to keep extracted default \"$SERVICE_CIDR\") " inp
+    if [ -z "$inp" ]
+    then
+        inp=$SERVICE_CIDR
+    fi
+    printf "SERVICE_CIDR: $inp\n" >> ~/workload-clusters/tmp.yaml
+    printf "\n\n"
+
+
+    if [[ $AVI_CONTROL_PLANE_HA_PROVIDER == 'false' ]]
+    then
+        printf "\nEnter the IP address of this cluster's endpoint\n"
+        while true; do
+            read -p "VSPHERE_CONTROL_PLANE_ENDPOINT: " inp
+            if [[ -z $inp || ! $inp =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]
+            then
+                printf "\nYou must provide a valid value.\n"
+            else
+                break
+            fi
+        done
+        printf "VSPHERE_CONTROL_PLANE_ENDPOINT: $inp\n" >> ~/workload-clusters/tmp.yaml
+        printf "\n\n"        
+    fi
+
 
     usecustomimageregistry='n'
     while true; do
@@ -320,32 +401,20 @@ then
         printf "\n\n"
     fi
 
-    read -p "CLUSTER_CIDR:(press enter to keep extracted default \"$CLUSTER_CIDR\") " inp
-    if [ -z "$inp" ]
-    then
-        inp=$CLUSTER_CIDR
-    fi
-    printf "CLUSTER_CIDR: $inp\n" >> ~/workload-clusters/tmp.yaml
-    printf "\n\n"
-    read -p "SERVICE_CIDR:(press enter to keep extracted default \"$SERVICE_CIDR\") " inp
-    if [ -z "$inp" ]
-    then
-        inp=$SERVICE_CIDR
-    fi
-    printf "SERVICE_CIDR: $inp\n" >> ~/workload-clusters/tmp.yaml
-    printf "\n\n"
 
     ENABLE_AUTOSCALER='false'
     while true; do
         read -p "Do you like to enable cluster autoscaler? [y/n] " yn
         case $yn in
-            [Yy]* ) ENABLE_AUTOSCALER='true'; printf "\nyou said yes.\n"; break;;
-            [Nn]* ) printf "\nYou said no.\n"; break;;
+            [Yy]* ) ENABLE_AUTOSCALER='true'; printf "you said yes.\n"; break;;
+            [Nn]* ) printf "You said no.\n"; break;;
             * ) echo "Please answer yes[y] or no[n].";;
         esac
     done
     if [[ $ENABLE_AUTOSCALER == 'true' ]]
     then
+        printf "ENABLE_AUTOSCALER: $ENABLE_AUTOSCALER\n" >> ~/workload-clusters/tmp.yaml
+
         while true; do
             read -p "AUTOSCALER_MAX_NODES_TOTAL: " inp
             if [[ ! $inp =~ ^[0-9]+$ || $inp < 1 ]]
@@ -429,7 +498,10 @@ then
     printf "NAMESPACE: default\n" >> ~/workload-clusters/tmp.yaml
     printf "ENABLE_DEFAULT_STORAGE_CLASS: true\n" >> ~/workload-clusters/tmp.yaml
 
+    printf "Generating\n"
+    sleep 1
     mv ~/workload-clusters/tmp.yaml ~/workload-clusters/$CLUSTER_NAME.yaml;
+    printf "==> DONE\n"
 
     while true; do
         read -p "Review generated file ~/workload-clusters/$CLUSTER_NAME.yaml and confirm or modify in the file and confirm to proceed further? [y/n] " yn
