@@ -1,5 +1,12 @@
 #!/bin/bash
 
+unset CLUSTER_NAME
+unset CLUSTER_PLAN
+unset ENABLE_MHC
+unset CLUSTER_CIDR
+unset SERVICE_CIDR
+unset AVI_CONTROL_PLANE_HA_PROVIDER
+
 while getopts "n:" opt
 do
     case $opt in
@@ -11,13 +18,9 @@ if [ -z "$clustername" ]
 then
     printf "\n Error: No cluster name given. Exit..."
     exit 1
+else 
+    CLUSTER_NAME=$clustername
 fi
-
-unset CLUSTER_PLAN
-unset ENABLE_MHC
-unset CLUSTER_CIDR
-unset SERVICE_CIDR
-unset AVI_CONTROL_PLANE_HA_PROVIDER
 
 printf "\n\nLooking for management cluster config at: ~/.config/tanzu/tkg/clusterconfigs/\n"
 mgmtconfigfile=$(ls ~/.config/tanzu/tkg/clusterconfigs/ | awk -v i=1 -v j=1 'FNR == i {print $j}')
@@ -29,9 +32,9 @@ then
     chmod 777 ~/workload-clusters/tmp.yaml
     while IFS=: read -r key val
     do
-        if [[ $key == *@("VSPHERE"|"TKG_HTTP_PROXY_ENABLED"|"IDENTITY_MANAGEMENT_TYPE"|"ENABLE_AUDIT_LOGGING"|"INFRASTRUCTURE_PROVIDER"|"ENABLE_CEIP_PARTICIPATION"|"ENABLE_DEFAULT_STORAGE_CLASS"|"LDAP_"|"OIDC_")* ]]
+        if [[ $key == *@("VSPHERE"|"TKG_HTTP_PROXY_ENABLED"|"IDENTITY_MANAGEMENT_TYPE"|"ENABLE_AUDIT_LOGGING"|"INFRASTRUCTURE_PROVIDER")* ]]
         then
-            if [[ "$key" != @("VSPHERE_CONTROL_PLANE_"|"VSPHERE_WORKER_"|"VSPHERE_TLS_THUMBPRINT") ]]
+            if [[ "$key" != *@("VSPHERE_CONTROL_PLANE_"|"VSPHERE_WORKER_"|"VSPHERE_TLS_THUMBPRINT")* ]]
             then
                 printf "$key: $(echo $val | sed 's,^ *,,; s, *$,,')\n" >> ~/workload-clusters/tmp.yaml          
             fi
@@ -119,6 +122,8 @@ then
     else
         printf "DEPLOY_TKG_ON_VSPHERE7: \"false\"\n" >> ~/workload-clusters/tmp.yaml
     fi
+    printf "\n\n"
+
 
     read -p "CLUSTER_PLAN:(press enter to keep extracted default \"$CLUSTER_PLAN\") " inp
     if [ -z "$inp" ]
@@ -128,7 +133,6 @@ then
         CLUSTER_PLAN=$inp
     fi
     printf "CLUSTER_PLAN: $inp\n" >> ~/workload-clusters/tmp.yaml
-
     printf "\n\n"
 
     CONTROLPLANE_SIZE="small"
@@ -326,6 +330,7 @@ then
             fi
         done
         printf "VSPHERE_WORKER_MEM_MIB: $inp\n" >> ~/workload-clusters/tmp.yaml
+        printf "\n\n"
     fi
 
 
@@ -337,8 +342,15 @@ then
             * ) echo "Please answer yes[y] or no[n].";;
         esac
     done
-    printf "ENABLE_MHC: $ENABLE_MHC\n" >> ~/workload-clusters/tmp.yaml
-    printf "\n\n"
+    if [[ $ENABLE_MHC == "true" ]]
+    then
+        printf "ENABLE_MHC: \n" >> ~/workload-clusters/tmp.yaml
+        printf "ENABLE_MHC_CONTROL_PLANE: true\n" >> ~/workload-clusters/tmp.yaml
+        printf "ENABLE_MHC_WORKER_NODE: true\n" >> ~/workload-clusters/tmp.yaml
+        printf "MHC_UNKNOWN_STATUS_TIMEOUT: 5m\n" >> ~/workload-clusters/tmp.yaml
+        printf "MHC_FALSE_STATUS_TIMEOUT: 12m\n" >> ~/workload-clusters/tmp.yaml
+        printf "\n\n"
+    fi
 
     read -p "CLUSTER_CIDR:(press enter to keep extracted default \"$CLUSTER_CIDR\") " inp
     if [ -z "$inp" ]
@@ -369,7 +381,9 @@ then
             fi
         done
         printf "VSPHERE_CONTROL_PLANE_ENDPOINT: $inp\n" >> ~/workload-clusters/tmp.yaml
-        printf "\n\n"        
+        printf "\n\n"
+    else
+        printf "VSPHERE_CONTROL_PLANE_ENDPOINT: \n" >> ~/workload-clusters/tmp.yaml
     fi
 
 
@@ -398,6 +412,8 @@ then
             inp=$TKG_CUSTOM_IMAGE_REPOSITORY_CA_CERTIFICATE
         fi
         printf "TKG_CUSTOM_IMAGE_REPOSITORY_CA_CERTIFICATE: \"$inp\"\n" >> ~/workload-clusters/tmp.yaml
+        printf "\n\n"
+    else
         printf "\n\n"
     fi
 
@@ -487,7 +503,8 @@ then
         done
         printf "AUTOSCALER_MAX_NODE_PROVISION_TIME: $AUTOSCALER_MAX_NODE_PROVISION_TIME\n" >> ~/workload-clusters/tmp.yaml
         printf "\n\n"
-
+    else 
+        printf "ENABLE_AUTOSCALER: false\n" >> ~/workload-clusters/tmp.yaml
     fi
 
     
@@ -502,15 +519,6 @@ then
     sleep 1
     mv ~/workload-clusters/tmp.yaml ~/workload-clusters/$CLUSTER_NAME.yaml;
     printf "==> DONE\n"
-
-    while true; do
-        read -p "Review generated file ~/workload-clusters/$CLUSTER_NAME.yaml and confirm or modify in the file and confirm to proceed further? [y/n] " yn
-        case $yn in
-            [Yy]* ) export configfile=$(echo "~/workload-clusters/$CLUSTER_NAME.yaml"); printf "\nyou confirmed yes\n"; break;;
-            [Nn]* ) printf "\n\nYou said no. \n\nExiting...\n\n"; break;;
-            * ) echo "Please answer yes or no.";;
-        esac
-    done
 else
     printf "\n\nNo management cluster config file found.\n\nGENERATION OF TKG WORKLOAD CLUSTER CONFIG FILE FAILED\n\n"
 fi

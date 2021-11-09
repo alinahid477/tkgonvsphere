@@ -46,7 +46,7 @@ fi
 
 if [[ -z $TANZU_CONNECT ]]
 then
-    source ~/binaries/tanzu_connect.sh
+    source ~/binaries/tanzu_connect_management.sh
     sleep 2
     isexist=$(ls /tmp/TANZU_CONNECT)
     if [[ -z $isexist ]]
@@ -97,6 +97,14 @@ then
     else 
         SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
         source $SCRIPT_DIR/generate_workload_cluster_config.sh -n $clustername
+        while true; do
+            read -p "Review generated file ~/workload-clusters/$clustername.yaml and confirm or modify in the file and confirm to proceed further? [y/n] " yn
+            case $yn in
+                [Yy]* ) printf "\nyou confirmed yes\n"; break;;
+                [Nn]* ) printf "\n\nYou said no. \n\nExiting...\n\n"; exit;;
+                * ) echo "Please answer yes or no.";;
+            esac
+        done
     fi
 fi
 
@@ -272,6 +280,9 @@ then
             printf "\nERROR: Adjusting kubeconfig for $CLUSTER_NAME. Please manually change the cluster endpoint to domain name 'kubernetes'...\n"
         fi
         printf "==>DONE\n"
+        printf "\n\n================\n"
+        printf "in order to use kubectl for $CLUSTER_NAME you must run ~/binaries/tanzu_connect.sh -n $CLUSTER_NAME to establish tunnel for its endpoint $serverurl"
+        printf "\n================\n\n"
     fi
 
     printf "\n\n\n"
