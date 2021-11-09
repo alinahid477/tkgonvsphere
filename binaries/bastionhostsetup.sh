@@ -11,9 +11,44 @@ returnOrexit()
     fi
 }
 
-printf "\nPreparing $BASTION_USERNAME@$BASTION_HOST for merlin\n"
+isexist=$(ls ~/.ssh/id_rsa)
+if [[ -z $isexist ]]
+then
+    printf "\nERROR: Failed. id_rsa file must exist in .ssh directory..."
+    printf "\nPlease ensure to place id_rsa file in .ssh directory and the id_rsa.pub in .ssh of $BASTION_USERNAME@$BASTION_HOST"
+    exit
+fi
 
-isexist=$(ssh -i .ssh/id_rsa $BASTION_USERNAME@$BASTION_HOST 'ls -l merlin/tkgonvsphere')
+printf "\nChecking Docker on $BASTION_USERNAME@$BASTION_HOST...\n"
+isexist=$(ssh -i .ssh/id_rsa $BASTION_USERNAME@$BASTION_HOST 'docker --version')
+if [[ -z $isexist ]]
+then
+    printf "\nERROR: Failed. Docker not installed on bastion host..."
+    printf "\nPlease install docker on host $BASTION_HOST to continue..."
+    exit 1
+else
+    printf "\nDocker found: $isexist"
+fi
+printf "\nChecking python3 on $BASTION_USERNAME@$BASTION_HOST...\n"
+isexist=$(ssh -i .ssh/id_rsa $BASTION_USERNAME@$BASTION_HOST 'python3 --version')
+if [[ -z $isexist ]]
+then
+    printf "\npython3 not found. checking python on $BASTION_USERNAME@$BASTION_HOST..."
+    isexist=$(ssh -i .ssh/id_rsa $BASTION_USERNAME@$BASTION_HOST 'python3 --version')
+    if [[ -z $isexist ]]
+    then
+        printf "\nERROR: Failed. Python not installed on bastion host..."
+        printf "\nPlease install Python on host $BASTION_HOST to continue..."
+        exit 1
+    else
+        printf "\nDocker found: $isexist"
+    fi
+else
+    printf "\nPython found: $isexist"
+fi
+
+printf "\nPreparing $BASTION_USERNAME@$BASTION_HOST for merlin\n"
+isexist=$(ssh -i ~/.ssh/id_rsa $BASTION_USERNAME@$BASTION_HOST 'ls -l merlin/tkgonvsphere')
 if [[ -z $isexist ]]
 then
     printf "\nCreating directory 'merlin' in $BASTION_USERNAME@$BASTION_HOST home dir"
