@@ -22,8 +22,8 @@
 !.ssh/sshuttleconfig
 binaries/*
 !binaries/.gitkeep
-!binaries/dns
 !binaries/generate_workload_cluster_config.sh
+!binaries/backgroundchecker.sh
 !binaries/tkginstall.sh
 !binaries/tkgworkloadwizard.sh
 !binaries/adjustdns.sh

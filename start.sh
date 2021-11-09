@@ -8,20 +8,47 @@ fi
 if [[ -z $name ]]
 then
     name='tkgonvsphere'
+    printf "\nAssuming default container name: $name"
 fi
 isexists=$(docker images | grep "\<$name\>")
 if [[ -z $isexists || $forcebuild == "forcebuild" ]]
 then
     docker build . -t $name
 fi
-# cd binaries/bind9
-# docker network create --subnet=100.64.0.0/16 corp-tanzu-net
-# docker build -t bind9 .
-# docker run -d --rm --name=dns-server --net=corp-tanzu-net --ip=100.64.0.10 bind9
-# docker exec -d dns-server /etc/init.d/bind9 start
-# cd ../../
-# docker run --rm --publish 100.64.0.10:53:53/udp --net=dns-network --ip 100.64.0.10 --name dnscontainer sameersbn/bind:latest
-# docker run -it --rm --net=host --dns=192.168.110.10 --dns=127.0.0.53 --dns-search=localdomain -v ${PWD}:/root/ -v /var/run/docker.sock:/var/run/docker.sock --name $1 $1
-# docker run -it --rm --net=corp-tanzu-net --dns=127.0.0.1 --dns=100.64.0.10 --dns=8.8.8.8 --hostname $1 -p 8080:8080 --ip=100.64.0.2 -v ${PWD}:/root/ -v /var/run/docker.sock:/var/run/docker.sock --name $1 $1
+
+isexist=$(ls Dockerfile)
+isexist2=$(ls binaries/Dockerfile)
+if [[ -z $isexist || -z $isexist2 ]]
+then
+    numberoftarfound=$(find binaries/*tar* -type f -printf "." | wc -c)
+    if [[ $numberoftarfound == 1 ]]
+    then
+        tanzubundlename=$(find binaries/*tar* -printf "%f\n")
+    fi
+    if [[ $numberoftarfound -gt 1 ]]
+    then
+        printf "\nfound more than 1 bundles..\n"
+        find ./*tar* -printf "%f\n"
+        printf "Error: only 1 tar file is allowed in ~/binaries dir.\n"
+        printf "\n\n"
+        exit 1
+    fi
+
+    if [[ $numberoftarfound -lt 1 ]]
+    then
+        printf "\nNo tanzu bundle found. Please place the tanzu bindle in binaries dir and ./start.sh again. Exiting...\n"
+        exit 1
+    fi
+
+    if [[ $tanzubundlename == "tce"* ]]
+    then
+        cp Dockerfile.tce0.9.1 Dockerfile
+        cp binaries/Dockerfile.tce0.9.1 binaries/Dockerfile
+    else
+        cp Dockerfile.tkg1.4 Dockerfile
+        cp binaries/Dockerfile.tkg1.4 binaries/Dockerfile
+    fi
+fi
+
 docker run -it --rm --net=host --add-host kubernetes:127.0.0.1 --cap-add=NET_ADMIN -v ${PWD}:/root/ -v /var/run/docker.sock:/var/run/docker.sock --name $name $name
-#docker run -it --rm --dns=100.64.0.10 --net=dns-network -v ${PWD}:/root/ -v /var/run/docker.sock:/var/run/docker.sock --name $1 $1
+

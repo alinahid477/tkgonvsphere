@@ -238,6 +238,11 @@ then
 
     printf "Creating k8s cluster from yaml called ~/workload-clusters/$CLUSTER_NAME.yaml\n\n"
     sleep 2
+    if [[ -n $BASTION_HOST ]]
+    then
+        cd ~
+        ./binaries/backgroundchecker.sh $CLUSTER_NAME &
+    fi    
     tanzu cluster create  --file $configfile -v 9 #--tkr $TKR_VERSION # --dry-run > ~/workload-clusters/$CLUSTER_NAME-dryrun.yaml
     printf "\n\nDONE.\n\n\n"
 
@@ -245,22 +250,64 @@ then
     # kubectl apply -f ~/workload-clusters/$CLUSTER_NAME-dryrun.yaml
     # printf "\n\nDONE.\n\n\n"
 
-    printf "\nWaiting 20s to complete cluster create\n"
-    sleep 20
-    printf "\n\nDONE.\n\n\n"
-
-    printf "\nGetting cluster info\n"
-    tanzu cluster kubeconfig get $CLUSTER_NAME --admin
-    printf "\n\nDONE.\n\n\n"
-
-    printf "\nStopping tunnel on 443 for $VSPHERE_SERVER_IP for $VSPHERE_SERVER...\n"
-    fuser -k 443/tcp
-    sleep 1
-    printf "==>DONE\n"
 
     if [[ -n $BASTION_HOST ]]
     then
-        printf "\nBastion host detected...\n"
+        printf "\nWaiting for background checker to finish\n"
+        isexist=$(cat /tmp/background-checker | grep "$CLUSTER_NAME")
+        count=1
+        while [[ -z $isexist && $count -lt 6 ]]; do
+            sleep 30 #(background checker sleeps for 2m. Hence 30*5=180=2m30s is max wait time)
+            printf "\nWaiting for background process signal (retry #$count of 6)..."
+            isexist=$(cat /tmp/background-checker | grep "$CLUSTER_NAME")
+            ((count=count+1))
+        done
+        printf "\n===>Finished waiting.\n"
+        fuser -k 6443/tcp
+        if [[ -z $MANAGEMENT_CLUSTER_ENDPOINT ]]
+        then
+            kubeconfigfile=~/.kube-tkg/config
+            serverurl=$(awk '/server/ {print $NF;exit}' $kubeconfigfile | awk -F/ '{print $3}' | awk -F: '{print $1}')
+            port=$(awk '/server/ {print $NF;exit}' $kubeconfigfile | awk -F/ '{print $3}' | awk -F: '{print $2}')
+        else
+            proto="$(echo $MANAGEMENT_CLUSTER_ENDPOINT | grep :// | sed -e's,^\(.*://\).*,\1,g')"
+            serverurl="$(echo ${MANAGEMENT_CLUSTER_ENDPOINT/$proto/} | cut -d/ -f1)"
+            port="$(echo $serverurl | awk -F: '{print $2}')"
+            serverurl="$(echo $serverurl | awk -F: '{print $1}')"
+            if [[ -z $port ]]
+            then
+                if [[ -z $proto || $proto == 'http://' ]]
+                then
+                    port=80
+                else 
+                    port=443
+                fi                    
+            fi
+            if [[ $serverurl != 'kubernetes' && -n $serverurl && -n $port ]]
+            then
+                printf "\nCreating endpoint Tunnel $port:$serverurl:$port through bastion $BASTION_USERNAME@$BASTION_HOST ...\n"
+                ssh -i /root/.ssh/id_rsa -4 -fNT -L $port:$serverurl:$port $BASTION_USERNAME@$BASTION_HOST
+                sleep 1
+                printf "\n=>Tunnel created.\n"
+            fi
+        fi
+        printf "\n\nDONE.\n\n\n"
+    else 
+        printf "\nWaiting 40s...\n"
+        sleep 40
+        printf "\n\nDONE.\n\n\n"
+    fi
+    
+
+    printf "\nGetting cluster info\n"
+    tanzu cluster kubeconfig get $CLUSTER_NAME --admin
+    printf "\n\nDONE.\n\n\n" 
+
+    if [[ -n $BASTION_HOST ]]
+    then
+        printf "\nStopping tunnel on 443 for $VSPHERE_SERVER_IP for $VSPHERE_SERVER...\n"
+        fuser -k 443/tcp
+        printf "==>DONE\n"
         printf "\nAdjusting kubeconfig for $CLUSTER_NAME to work with bastion host...\n"
         sleep 1
         endpointipport=$(kubectl config view -o jsonpath='{.clusters[?(@.name == "'$CLUSTER_NAME'")].cluster.server}')
@@ -281,7 +328,7 @@ then
         fi
         printf "==>DONE\n"
         printf "\n\n================\n"
-        printf "in order to use kubectl for $CLUSTER_NAME you must run ~/binaries/tanzu_connect.sh -n $CLUSTER_NAME to establish tunnel for its endpoint $serverurl"
+        printf "in order to use kubectl for $CLUSTER_NAME you must run '~/binaries/tanzu_connect.sh -n $CLUSTER_NAME' to establish tunnel for its endpoint $serverurl"
         printf "\n================\n\n"
     fi
 

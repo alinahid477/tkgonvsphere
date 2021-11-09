@@ -15,16 +15,9 @@ install_tanzu_plugin()
     then
         printf "\nfound more than 1 bundles..\n"
         find ./*tar* -printf "%f\n"
-        while true; do
-            read -p "type the bundle name: " inp
-            if [ -n "$inp" ]
-            then
-                tanzubundlename=$inp
-                break
-            else
-                printf "\nYou must provide a value.\n"
-            fi
-        done
+        printf "Error: only 1 tar file is allowed in ~/binaries dir.\n"
+        printf "\n\n"
+        exit 1
     fi
 
     if [[ $numberoftarfound -lt 1 ]]
@@ -50,7 +43,7 @@ install_tanzu_plugin()
         cd $versionfolder
         install core/$versionfolder/tanzu-core-linux_amd64 /usr/local/bin/tanzu
         tanzu plugin install --local /tmp/tanzu/cli all
-    fi    
+    fi
 }
 
 
