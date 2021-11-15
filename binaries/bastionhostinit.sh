@@ -6,32 +6,23 @@ install_tanzu_plugin()
     printf "\nChecking tanzu bundle...\n\n" >> logs/bastioninitlog.log
     cd /tmp
     sleep 1
-    numberoftarfound=$(find ./*tar* -type f -printf "." | wc -c)
-    if [[ $numberoftarfound == 1 ]]
-    then
-        tanzubundlename=$(find ./*tar* -printf "%f\n")
-    fi
-    if [[ $numberoftarfound -gt 1 ]]
-    then
-        printf "\nfound more than 1 bundles..\n" >> logs/bastioninitlog.log
-        find ./*tar* -printf "%f\n"
-        while true; do
-            read -p "type the bundle name: " inp
-            if [ -n "$inp" ]
-            then
-                tanzubundlename=$inp
-                break
-            else
-                printf "\nYou must provide a value.\n" >> logs/bastioninitlog.log
-            fi
-        done
-    fi
-
+    numberoftarfound=$(find /tmp/*.tar* -type f -printf "." | wc -c)
     if [[ $numberoftarfound -lt 1 ]]
     then
         printf "\nNo tanzu bundle found. Please place the tanzu bindle in ~/binaries and rebuild again. Exiting...\n" >> logs/bastioninitlog.log
         exit 1
     fi
+    if [[ $numberoftarfound == 1 ]]
+    then
+        tanzubundlename=$(find /tmp/*.tar* -printf "%f\n")
+        printf "\n\nTanzu Bundle: $tanzubundlename.\n\n"
+    else
+        printf "\n\nError: Found more than 1 tar file. Please ensure only 1 tanzu tar file exists in binaries directory.\n\n"
+        exit 1
+    fi
+    
+
+    
     printf "\nTanzu Bundle: $tanzubundlename. Installing..." >> logs/bastioninitlog.log
     # sleep 1
     # mkdir tanzu

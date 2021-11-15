@@ -58,41 +58,44 @@ fi
 
 printf "\nGetting remote files list from $BASTION_USERNAME@$BASTION_HOST\n"
 ssh -i .ssh/id_rsa $BASTION_USERNAME@$BASTION_HOST 'ls ~/merlin/tkgonvsphere/binaries/' > /tmp/bastionhostbinaries.txt
-ssh -i .ssh/id_rsa $BASTION_USERNAME@$BASTION_HOST 'ls -a ~/merlin/tkgonvsphere/' > /tmp/bastionhosthomefiles.txt
-ssh -i .ssh/id_rsa $BASTION_USERNAME@$BASTION_HOST 'ls -a ~/merlin/tkgonvsphere/.ssh/' > /tmp/bastionhosthomefiles.txt
+ssh -i .ssh/id_rsa $BASTION_USERNAME@$BASTION_HOST 'ls ~/merlin/tkgonvsphere/' > /tmp/bastionhosthomefiles.txt
+ssh -i .ssh/id_rsa $BASTION_USERNAME@$BASTION_HOST 'ls ~/merlin/tkgonvsphere/.ssh/' >> /tmp/bastionhosthomefiles.txt
 
 
 tanzubundlename=''
 printf "\nChecking tanzu bundle...\n\n"
-cd /tmp
 sleep 1
-numberoftarfound=$(find ./*tar* -type f -printf "." | wc -c)
-if [[ $numberoftarfound == 1 ]]
-then
-    tanzubundlename=$(find ./*tar* -printf "%f\n")
-fi
-if [[ $numberoftarfound -gt 1 ]]
-then
-    printf "\nfound more than 1 bundles..\n"
-    find ./*tar* -printf "%f\n"
-    while true; do
-        read -p "type the bundle name: " inp
-        if [ -n "$inp" ]
-        then
-            tanzubundlename=$inp
-            break
-        else
-            printf "\nYou must provide a value.\n"
-        fi
-    done
-fi
-
+numberoftarfound=$(find ~/binaries/*.tar* -type f -printf "." | wc -c)
 if [[ $numberoftarfound -lt 1 ]]
 then
     printf "\nNo tanzu bundle found. Please place the tanzu bindle in ~/binaries and rebuild again. Exiting...\n"
     exit 1
 fi
-printf "\nTanzu Bundle: $tanzubundlename."
+if [[ $numberoftarfound == 1 ]]
+then
+    tanzubundlename=$(find ~/binaries/*.tar* -printf "%f\n")
+    printf "\n\nTanzu Bundle: $tanzubundlename.\n\n"
+else
+    printf "\n\nError: Found more than 1 tar file. Please ensure only 1 tanzu tar file exists in binaries directory.\n\n"
+    exit 1
+fi
+# if [[ $numberoftarfound -gt 1 ]]
+# then
+#     printf "\nfound more than 1 bundles..\n"
+#     find ./*tar* -printf "%f\n"
+#     while true; do
+#         read -p "type the bundle name: " inp
+#         if [ -n "$inp" ]
+#         then
+#             tanzubundlename=$inp
+#             break
+#         else
+#             printf "\nYou must provide a value.\n"
+#         fi
+#     done
+# fi
+
+
 cd ~
 
 isexist=$(cat /tmp/bastionhostbinaries.txt | grep -w $tanzubundlename)
@@ -246,7 +249,13 @@ while [[ $dobreak == 'n' && $count -lt 30 ]]; do
         if [[ $containerdeleted == 'n' ]]
         then
             printf "Checking bootstrap cluster uploaded..."
-            isexist=$(docker container ls | grep "projects.registry.vmware.com/tkg/kind/node" || printf "")
+            $dockers=$(docker ps --format "{{.Names}}" || printf "error")
+            if [[ -n $dockers && $dockers != "error" ]]
+            then
+                isexist=$(echo $dockers | grep "projects.registry.vmware.com/tkg/kind/node")
+            else
+                isexist='no'
+            fi
             if [[ -z $isexist ]]
             then
                 containerdeleted='y'
