@@ -514,7 +514,8 @@ then
     printf "CNI: antrea\n" >> ~/workload-clusters/tmp.yaml
     printf "NAMESPACE: default\n" >> ~/workload-clusters/tmp.yaml
     printf "ENABLE_DEFAULT_STORAGE_CLASS: true\n" >> ~/workload-clusters/tmp.yaml
-
+    sleep 1
+    sed -i '/^$/d' ~/workload-clusters/tmp.yaml
     printf "Generating\n"
     sleep 1
     mv ~/workload-clusters/tmp.yaml ~/workload-clusters/$CLUSTER_NAME.yaml;

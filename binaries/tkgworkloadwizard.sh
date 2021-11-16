@@ -169,7 +169,7 @@ then
     printf "*********************************************\n"
     printf "\n\n\n"
 
-    sed -i '$ d' $configfile
+    # sed -i '$ d' $configfile
 
     doshuttle='n'
     if [[ -n $BASTION_HOST && $doshuttle == 'n' ]]
@@ -183,22 +183,26 @@ then
         fi
         if [[ -z $foundvsphereip && -z $VSPHERE_SERVER_IP ]]
         then
-            printf "\nNo vsphere server ip detected for $VSPHERE_SERVER.\nextracting VSPHERE_SERVER_IP...\n"
+            printf "\nNo vsphere server ip detected for $VSPHERE_SERVER.\n"
             echo "=> Establishing sshuttle with remote $BASTION_USERNAME@$BASTION_HOST...."
             sleep 1
             sshuttle --dns --python python2 -D -r $BASTION_USERNAME@$BASTION_HOST 0/0 -x $BASTION_HOST/32 --disable-ipv6 --listen 0.0.0.0:0
+            sleep 3
             echo "=> DONE."
             printf "\nextracting VSPHERE_SERVER_IP...\n"
             foundvsphereip=$(getent hosts $VSPHERE_SERVER | awk '{ print $1 }')
             sleep 1
-            printf "\n$foundvsphereip\n"
+            if [[ -n $foundvsphereip ]]
+            then
+                printf "Extracted ip: $foundvsphereip\n"
+            fi
             sleep 1
             echo "=> DONE."
-            printf "\nStopping sshuttle...\n"
+            printf "Stopping sshuttle...\n"
             sshuttlepid=$(ps aux | grep "/usr/bin/sshuttle --dns" | awk 'FNR == 1 {print $2}')
             kill $sshuttlepid
-            sleep 1
-            printf "==> DONE\n"
+            sleep 3
+            printf "==> STOPPED.\n"
         fi
         if [[ -z $foundvsphereip && -z $VSPHERE_SERVER_IP ]]
         then
@@ -235,7 +239,15 @@ then
         fi
         
     fi
-
+    printf "\n\n\n"
+    while true; do
+        read -p "Confirm to continue? [y/n] " yn
+        case $yn in
+            [Yy]* ) printf "\nyou confirmed yes\n"; break;;
+            [Nn]* ) printf "\n\nYou said no. \n\nExiting...\n\n"; exit 1;;
+            * ) echo "Please answer yes or no.";;
+        esac
+    done
     printf "Creating k8s cluster from yaml called ~/workload-clusters/$CLUSTER_NAME.yaml\n\n"
     sleep 2
     if [[ -n $BASTION_HOST ]]
@@ -263,6 +275,7 @@ then
             ((count=count+1))
         done
         printf "\n===>Finished waiting.\n"
+        rm /tmp/background-checker
         fuser -k 6443/tcp
         if [[ -z $MANAGEMENT_CLUSTER_ENDPOINT ]]
         then
