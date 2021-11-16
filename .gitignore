@@ -36,7 +36,8 @@ binaries/*
 !binaries/.dockerignore
 !binaries/bastionhostinit.sh
 !binaries/bastionhostrun.sh
-!binaries/bastionhostsetup.sh
+!binaries/bastionhostmanagementsetup.sh
+!binaries/bastionhostworkloadsetup.sh
 !binaries/bastionhostcleanup.sh
 workload-clusters/*
 !workload-clusters/.gitkeep

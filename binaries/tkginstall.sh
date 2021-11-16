@@ -86,7 +86,7 @@ then
         # ssh-add /root/.ssh/id_rsa
         # printf "\nADDED.\n"
 
-        source /root/binaries/bastionhostsetup.sh
+        source /root/binaries/bastionhostmanagementsetup.sh
     else
         printf "\n\n\n Here's your public key in ~/.ssh/id_rsa.pub:\n"
         cat ~/.ssh/tkg_rsa.pub

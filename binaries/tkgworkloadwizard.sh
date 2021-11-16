@@ -171,93 +171,100 @@ then
 
     # sed -i '$ d' $configfile
 
-    doshuttle='n'
-    if [[ -n $BASTION_HOST && $doshuttle == 'n' ]]
-    then
-        printf "\n\nBastion host detected\n"
-        sleep 1
-        if [[ $VSPHERE_SERVER =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+[\:0-9]*$ && -z $VSPHERE_SERVER_IP ]]
-        then
-            printf "\nVSPHERE_SERVER=$VSPHERE_SERVER is an ip.\nGoing to use this for VSPHERE_SERVER_IP..."
-            foundvsphereip=$VSPHERE_SERVER
-        fi
-        if [[ -z $foundvsphereip && -z $VSPHERE_SERVER_IP ]]
-        then
-            printf "\nNo vsphere server ip detected for $VSPHERE_SERVER.\n"
-            echo "=> Establishing sshuttle with remote $BASTION_USERNAME@$BASTION_HOST...."
-            sleep 1
-            sshuttle --dns --python python2 -D -r $BASTION_USERNAME@$BASTION_HOST 0/0 -x $BASTION_HOST/32 --disable-ipv6 --listen 0.0.0.0:0
-            sleep 3
-            echo "=> DONE."
-            printf "\nextracting VSPHERE_SERVER_IP...\n"
-            foundvsphereip=$(getent hosts $VSPHERE_SERVER | awk '{ print $1 }')
-            sleep 1
-            if [[ -n $foundvsphereip ]]
-            then
-                printf "Extracted ip: $foundvsphereip\n"
-            fi
-            sleep 1
-            echo "=> DONE."
-            printf "Stopping sshuttle...\n"
-            sshuttlepid=$(ps aux | grep "/usr/bin/sshuttle --dns" | awk 'FNR == 1 {print $2}')
-            kill $sshuttlepid
-            sleep 3
-            printf "==> STOPPED.\n"
-        fi
-        if [[ -z $foundvsphereip && -z $VSPHERE_SERVER_IP ]]
-        then
-            printf "\nFailed to extract VSPHERE_SERVER_IP for $VSPHERE_SERVER.\nrequire user input..."
-            while true; do
-                read -p "VSPHERE_SERVER_IP: " inp
-                if [ -z "$inp" ]
-                then
-                    printf "\nYou must provide a valid value.\n"
-                else 
-                    foundvsphereip=$inp
-                    break
-                fi
-            done
-        fi
-        if [[ -n $foundvsphereip && -z $VSPHERE_SERVER_IP ]]
-        then
-            VSPHERE_SERVER_IP=$foundvsphereip
-            printf "\nrecording VSPHERE_SERVER_IP=$VSPHERE_SERVER in .env file\n"
-            printf "\nVSPHERE_SERVER_IP=$VSPHERE_SERVER_IP" >> /root/.env
-            sleep 1
-        fi
-        if [[ -n $VSPHERE_SERVER_IP ]]
-        then
-            printf "\nestablish tunnel for $VSPHERE_SERVER_IP on 443\n"
-            sleep 1
-            printf "127.0.0.1 $VSPHERE_SERVER\n" >> /etc/hosts
-            ssh -i /root/.ssh/id_rsa -4 -fNT -L 443:$VSPHERE_SERVER_IP:443 $BASTION_USERNAME@$BASTION_HOST
-            printf "==> DONE.\n"
-            sleep 1
-        else
-            echo "\nERROR: When bastion host is enabled you must provide VSPHERE_SERVER_IP\nexiting....\n"
-            exit 1
-        fi
+    # doshuttle='n'
+    # if [[ -n $BASTION_HOST && $doshuttle == 'n' ]]
+    # then
+    #     printf "\n\nBastion host detected\n"
+    #     sleep 1
+    #     if [[ $VSPHERE_SERVER =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+[\:0-9]*$ && -z $VSPHERE_SERVER_IP ]]
+    #     then
+    #         printf "\nVSPHERE_SERVER=$VSPHERE_SERVER is an ip.\nGoing to use this for VSPHERE_SERVER_IP..."
+    #         foundvsphereip=$VSPHERE_SERVER
+    #     fi
+    #     if [[ -z $foundvsphereip && -z $VSPHERE_SERVER_IP ]]
+    #     then
+    #         printf "\nNo vsphere server ip detected for $VSPHERE_SERVER.\n"
+    #         echo "=> Establishing sshuttle with remote $BASTION_USERNAME@$BASTION_HOST...."
+    #         sleep 1
+    #         sshuttle --dns --python python2 -D -r $BASTION_USERNAME@$BASTION_HOST 0/0 -x $BASTION_HOST/32 --disable-ipv6 --listen 0.0.0.0:0
+    #         sleep 3
+    #         echo "=> DONE."
+    #         printf "\nextracting VSPHERE_SERVER_IP...\n"
+    #         foundvsphereip=$(getent hosts $VSPHERE_SERVER | awk '{ print $1 }')
+    #         sleep 1
+    #         if [[ -n $foundvsphereip ]]
+    #         then
+    #             printf "Extracted ip: $foundvsphereip\n"
+    #         fi
+    #         sleep 1
+    #         echo "=> DONE."
+    #         printf "Stopping sshuttle...\n"
+    #         sshuttlepid=$(ps aux | grep "/usr/bin/sshuttle --dns" | awk 'FNR == 1 {print $2}')
+    #         kill $sshuttlepid
+    #         sleep 3
+    #         printf "==> STOPPED.\n"
+    #     fi
+    #     if [[ -z $foundvsphereip && -z $VSPHERE_SERVER_IP ]]
+    #     then
+    #         printf "\nFailed to extract VSPHERE_SERVER_IP for $VSPHERE_SERVER.\nrequire user input..."
+    #         while true; do
+    #             read -p "VSPHERE_SERVER_IP: " inp
+    #             if [ -z "$inp" ]
+    #             then
+    #                 printf "\nYou must provide a valid value.\n"
+    #             else 
+    #                 foundvsphereip=$inp
+    #                 break
+    #             fi
+    #         done
+    #     fi
+    #     if [[ -n $foundvsphereip && -z $VSPHERE_SERVER_IP ]]
+    #     then
+    #         VSPHERE_SERVER_IP=$foundvsphereip
+    #         printf "\nrecording VSPHERE_SERVER_IP=$VSPHERE_SERVER in .env file\n"
+    #         printf "\nVSPHERE_SERVER_IP=$VSPHERE_SERVER_IP" >> /root/.env
+    #         sleep 1
+    #     fi
+    #     if [[ -n $VSPHERE_SERVER_IP ]]
+    #     then
+    #         printf "\nestablish tunnel for $VSPHERE_SERVER_IP on 443\n"
+    #         sleep 1
+    #         printf "127.0.0.1 $VSPHERE_SERVER\n" >> /etc/hosts
+    #         ssh -i /root/.ssh/id_rsa -4 -fNT -L 443:$VSPHERE_SERVER_IP:443 $BASTION_USERNAME@$BASTION_HOST
+    #         printf "==> DONE.\n"
+    #         sleep 1
+    #     else
+    #         echo "\nERROR: When bastion host is enabled you must provide VSPHERE_SERVER_IP\nexiting....\n"
+    #         exit 1
+    #     fi
         
-    fi
-    printf "\n\n\n"
-    while true; do
-        read -p "Confirm to continue? [y/n] " yn
-        case $yn in
-            [Yy]* ) printf "\nyou confirmed yes\n"; break;;
-            [Nn]* ) printf "\n\nYou said no. \n\nExiting...\n\n"; exit 1;;
-            * ) echo "Please answer yes or no.";;
-        esac
-    done
+    # fi
+    # printf "\n\n\n"
+    # while true; do
+    #     read -p "Confirm to continue? [y/n] " yn
+    #     case $yn in
+    #         [Yy]* ) printf "\nyou confirmed yes\n"; break;;
+    #         [Nn]* ) printf "\n\nYou said no. \n\nExiting...\n\n"; exit 1;;
+    #         * ) echo "Please answer yes or no.";;
+    #     esac
+    # done
+
+
+
     printf "Creating k8s cluster from yaml called ~/workload-clusters/$CLUSTER_NAME.yaml\n\n"
     sleep 2
     if [[ -n $BASTION_HOST ]]
     then
-        cd ~
-        ./binaries/backgroundchecker.sh $CLUSTER_NAME &
+        printf "\n\nBastion host detected. Starting bastion host workload setup...\n"
+        # cd ~
+        # ./binaries/backgroundchecker.sh $CLUSTER_NAME &
+        source /root/binaries/bastionhostworkloadsetup.sh $configfile
+    else
+        tanzu cluster create  --file $configfile -v 9 #--tkr $TKR_VERSION # --dry-run > ~/workload-clusters/$CLUSTER_NAME-dryrun.yaml
     fi    
-    tanzu cluster create  --file $configfile -v 9 #--tkr $TKR_VERSION # --dry-run > ~/workload-clusters/$CLUSTER_NAME-dryrun.yaml
-    printf "\n\nDONE.\n\n\n"
-
+    printf "\n\n\n==================\n\n"
+    printf "\nWaiting 3s.... \n"
+    sleep 3
     # printf "applying ~/workload-clusters/$CLUSTER_NAME-dryrun.yaml\n\n"
     # kubectl apply -f ~/workload-clusters/$CLUSTER_NAME-dryrun.yaml
     # printf "\n\nDONE.\n\n\n"
@@ -265,17 +272,27 @@ then
 
     if [[ -n $BASTION_HOST ]]
     then
-        printf "\nWaiting for background checker to finish\n"
-        isexist=$(cat /tmp/background-checker | grep "$CLUSTER_NAME")
-        count=1
-        while [[ -z $isexist && $count -lt 6 ]]; do
-            sleep 30 #(background checker sleeps for 2m. Hence 30*5=180=2m30s is max wait time)
-            printf "\nWaiting for background process signal (retry #$count of 6)..."
-            isexist=$(cat /tmp/background-checker | grep "$CLUSTER_NAME")
-            ((count=count+1))
-        done
-        printf "\n===>Finished waiting.\n"
-        rm /tmp/background-checker
+        printf "\nBastion host detected. Adjusting for bastion host...\n"
+        sleep 1
+        printf "\nChecking bastion host process...\n"
+        isexist=$(ls /tmp/bastionhostsuccessful)
+        if [[ $isexist ]]
+        then
+            # isexist=$(cat /tmp/bastionhostsuccessful | grep "$configfile")
+            # count=1
+            # while [[ -z $isexist && $count -lt 6 ]]; do
+            #     sleep 30 #(background checker sleeps for 2m. Hence 30*5=180=2m30s is max wait time)
+            #     printf "\nWaiting for background process signal (retry #$count of 6)..."
+            #     isexist=$(cat /tmp/background-checker | grep "$CLUSTER_NAME")
+            #     ((count=count+1))
+            # done
+            # printf "\n===>Finished.\n"
+            rm /tmp/bastionhostsuccessful
+        else
+            printf "\n\n\nERROR: Bastion host process unsuccessful. Exit...\n\n\n"
+            exit 1
+        fi
+        
         fuser -k 6443/tcp
         if [[ -z $MANAGEMENT_CLUSTER_ENDPOINT ]]
         then
@@ -304,23 +321,20 @@ then
                 printf "\n=>Tunnel created.\n"
             fi
         fi
-        printf "\n\nDONE.\n\n\n"
-    else 
-        printf "\nWaiting 40s...\n"
-        sleep 40
-        printf "\n\nDONE.\n\n\n"
+        printf "\n\nAdjustment for bastion host COMPLETE.\n\n\n"
     fi
     
 
     printf "\nGetting cluster info\n"
     tanzu cluster kubeconfig get $CLUSTER_NAME --admin
-    printf "\n\nDONE.\n\n\n" 
+    printf "\n\nCluster info now saved in .kube/config.\n\n\n" 
 
     if [[ -n $BASTION_HOST ]]
     then
-        printf "\nStopping tunnel on 443 for $VSPHERE_SERVER_IP for $VSPHERE_SERVER...\n"
-        fuser -k 443/tcp
-        printf "==>DONE\n"
+        sleep 1
+        # printf "\nStopping tunnel on 443 for $VSPHERE_SERVER_IP for $VSPHERE_SERVER...\n"
+        # fuser -k 443/tcp
+        # printf "==>DONE\n"
         printf "\nAdjusting kubeconfig for $CLUSTER_NAME to work with bastion host...\n"
         sleep 1
         endpointipport=$(kubectl config view -o jsonpath='{.clusters[?(@.name == "'$CLUSTER_NAME'")].cluster.server}')

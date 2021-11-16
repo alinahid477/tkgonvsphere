@@ -36,13 +36,13 @@ RUN curl -fsSLO https://download.docker.com/linux/static/stable/x86_64/docker-${
   && rm docker-${DOCKER_VERSION}.tgz
 
 
-COPY binaries/tce-linux-amd64-v${TANZU_CLI_VERSION}.tar.gz /tmp/
+COPY tce-linux-amd64-v${TANZU_CLI_VERSION}.tar.gz /tmp/
 RUN cd /tmp && mkdir tanzu \
 	&& tar -xvf tce-linux-amd64-v${TANZU_CLI_VERSION}.tar.gz -C tanzu/ \
 	&& cd /tmp/tanzu/tce-linux-amd64-v${TANZU_CLI_VERSION} \
 	&& install /tmp/tanzu/tce-linux-amd64-v${TANZU_CLI_VERSION}/bin/tanzu /usr/local/bin/tanzu
 
-COPY binaries/bastionhostinit.sh /usr/local/bastionhostinit.sh
+COPY bastionhostinit.sh /usr/local/bastionhostinit.sh
 RUN chmod +x /usr/local/bastionhostinit.sh
 
 # COPY binaries/tmc /usr/local/bin/

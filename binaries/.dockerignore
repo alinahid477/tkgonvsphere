@@ -7,6 +7,7 @@
 .aws
 .tanzu
 .ssh
+.kube
 .kube-tkg
 images
 .config
