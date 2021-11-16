@@ -42,9 +42,11 @@ then
 
     if [[ $tanzubundlename == "tce"* ]]
     then
+        printf "\ntce detected..\n"
         cp Dockerfile.tce0.9.1 Dockerfile
         cp binaries/Dockerfile.tce0.9.1 binaries/Dockerfile
     else
+        printf "\ntkg detected..\n"
         cp Dockerfile.tkg1.4 Dockerfile
         cp binaries/Dockerfile.tkg1.4 binaries/Dockerfile
     fi

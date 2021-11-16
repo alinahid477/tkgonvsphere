@@ -173,7 +173,7 @@ fi
 contextname=$(parse_yaml $kubeconfigfile | grep "^contexts_name=\"$clustername-" | awk -F= '$1=="contexts_name"{print $2}' | xargs)
 if [[ -n $contextname ]]
 then
-    printf "\nSwitching context...\n"
+    printf "\nSwitching context to $contextname...\n"
     kubectl config use-context $contextname
     printf "===>DONE.\n\n\n"
 else
