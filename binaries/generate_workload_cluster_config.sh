@@ -432,7 +432,7 @@ then
         printf "ENABLE_AUTOSCALER: $ENABLE_AUTOSCALER\n" >> ~/workload-clusters/tmp.yaml
 
         while true; do
-            read -p "AUTOSCALER_MAX_NODES_TOTAL: " inp
+            read -p "AUTOSCALER_MAX_NODES_TOTAL (including control plane node): " inp
             if [[ ! $inp =~ ^[0-9]+$ || $inp < 1 ]]
             then
                 printf "\nYou must provide a valid value.\n"
@@ -441,7 +441,10 @@ then
                 break
             fi
         done
+        AUTOSCALER_MAX_SIZE_0=$AUTOSCALER_MAX_NODES_TOTAL-1
         printf "AUTOSCALER_MAX_NODES_TOTAL: $AUTOSCALER_MAX_NODES_TOTAL\n" >> ~/workload-clusters/tmp.yaml
+        printf "AUTOSCALER_MAX_SIZE_0: $AUTOSCALER_MAX_SIZE_0\n" >> ~/workload-clusters/tmp.yaml
+        printf "AUTOSCALER_MIN_SIZE_0: $WORKER_MACHINE_COUNT\n" >> ~/workload-clusters/tmp.yaml
         printf "\n\n"
         while true; do
             read -p "AUTOSCALER_SCALE_DOWN_DELAY_AFTER_ADD (in minutes): " inp
