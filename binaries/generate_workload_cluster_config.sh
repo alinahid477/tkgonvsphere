@@ -432,68 +432,21 @@ then
         printf "ENABLE_AUTOSCALER: $ENABLE_AUTOSCALER\n" >> ~/workload-clusters/tmp.yaml
 
         while true; do
-            read -p "AUTOSCALER_MAX_NODES_TOTAL (including control plane node): " inp
+            read -p "AUTOSCALER_MAX_SIZE_0: " inp
             if [[ ! $inp =~ ^[0-9]+$ || $inp < 1 ]]
             then
                 printf "\nYou must provide a valid value.\n"
             else
-                AUTOSCALER_MAX_NODES_TOTAL=$inp
+                AUTOSCALER_MAX_SIZE_0=$inp
                 break
             fi
         done
-        AUTOSCALER_MAX_SIZE_0=$AUTOSCALER_MAX_NODES_TOTAL-1
-        printf "AUTOSCALER_MAX_NODES_TOTAL: $AUTOSCALER_MAX_NODES_TOTAL\n" >> ~/workload-clusters/tmp.yaml
         printf "AUTOSCALER_MAX_SIZE_0: $AUTOSCALER_MAX_SIZE_0\n" >> ~/workload-clusters/tmp.yaml
+        AUTOSCALER_MAX_NODES_TOTAL=0
+        printf "AUTOSCALER_MAX_NODES_TOTAL: \"$AUTOSCALER_MAX_NODES_TOTAL\"\n" >> ~/workload-clusters/tmp.yaml
         printf "AUTOSCALER_MIN_SIZE_0: $WORKER_MACHINE_COUNT\n" >> ~/workload-clusters/tmp.yaml
         printf "\n\n"
-        while true; do
-            read -p "AUTOSCALER_SCALE_DOWN_DELAY_AFTER_ADD (in minutes): " inp
-            if [[ ! $inp =~ ^[0-9]+$ || $inp < 1 ]]
-            then
-                printf "\nYou must provide a valid value.\n"
-            else
-                AUTOSCALER_SCALE_DOWN_DELAY_AFTER_ADD="${inp}m"
-                break                
-            fi
-        done
-        printf "AUTOSCALER_SCALE_DOWN_DELAY_AFTER_ADD: $AUTOSCALER_SCALE_DOWN_DELAY_AFTER_ADD\n" >> ~/workload-clusters/tmp.yaml
-        printf "\n\n"
-        while true; do
-            read -p "AUTOSCALER_SCALE_DOWN_DELAY_AFTER_DELETE (in minutes): " inp
-            if [[ ! $inp =~ ^[0-9]+$ || $inp < 1 ]]
-            then
-                printf "\nYou must provide a valid value.\n"
-            else
-                AUTOSCALER_SCALE_DOWN_DELAY_AFTER_DELETE="${inp}m"
-                break
-            fi
-        done
-        printf "AUTOSCALER_SCALE_DOWN_DELAY_AFTER_DELETE: $AUTOSCALER_SCALE_DOWN_DELAY_AFTER_DELETE\n" >> ~/workload-clusters/tmp.yaml
-        printf "\n\n"
-        while true; do
-            read -p "AUTOSCALER_SCALE_DOWN_DELAY_AFTER_FAILURE (in minutes): " inp
-            if [[ ! $inp =~ ^[0-9]+$ || $inp < 1 ]]
-            then
-                printf "\nYou must provide a valid value.\n"
-            else
-                AUTOSCALER_SCALE_DOWN_DELAY_AFTER_FAILURE="${inp}m"
-                break
-            fi
-        done
-        printf "AUTOSCALER_SCALE_DOWN_DELAY_AFTER_FAILURE: $AUTOSCALER_SCALE_DOWN_DELAY_AFTER_FAILURE\n" >> ~/workload-clusters/tmp.yaml
-        printf "\n\n"
-        while true; do
-            read -p "AUTOSCALER_SCALE_DOWN_UNNEEDED_TIME (in minutes): " inp
-            if [[ ! $inp =~ ^[0-9]+$ || $inp < 1 ]]
-            then
-                printf "\nYou must provide a valid value.\n"
-            else
-                AUTOSCALER_SCALE_DOWN_UNNEEDED_TIME="${inp}m"
-                break
-            fi
-        done
-        printf "AUTOSCALER_SCALE_DOWN_UNNEEDED_TIME: $AUTOSCALER_SCALE_DOWN_UNNEEDED_TIME\n" >> ~/workload-clusters/tmp.yaml
-        printf "\n\n"
+
         while true; do
             read -p "AUTOSCALER_MAX_NODE_PROVISION_TIME (in minutes): " inp
             if [[ ! $inp =~ ^[0-9]+$ || $inp < 1 ]]
@@ -504,8 +457,65 @@ then
                 break
             fi
         done
-        printf "AUTOSCALER_MAX_NODE_PROVISION_TIME: $AUTOSCALER_MAX_NODE_PROVISION_TIME\n" >> ~/workload-clusters/tmp.yaml
+        printf "AUTOSCALER_MAX_NODE_PROVISION_TIME: \"$AUTOSCALER_MAX_NODE_PROVISION_TIME\"\n" >> ~/workload-clusters/tmp.yaml
         printf "\n\n"
+
+
+        AUTOSCALER_SCALE_DOWN_DELAY_AFTER_ADD="10m"
+        # while true; do
+        #     read -p "AUTOSCALER_SCALE_DOWN_DELAY_AFTER_ADD (in minutes): " inp
+        #     if [[ ! $inp =~ ^[0-9]+$ || $inp < 1 ]]
+        #     then
+        #         printf "\nYou must provide a valid value.\n"
+        #     else
+        #         AUTOSCALER_SCALE_DOWN_DELAY_AFTER_ADD="${inp}m"
+        #         break                
+        #     fi
+        # done        
+        printf "AUTOSCALER_SCALE_DOWN_DELAY_AFTER_ADD: \"$AUTOSCALER_SCALE_DOWN_DELAY_AFTER_ADD\"\n" >> ~/workload-clusters/tmp.yaml
+        # printf "\n\n"
+        
+        AUTOSCALER_SCALE_DOWN_DELAY_AFTER_DELETE="10s"
+        # while true; do
+        #     read -p "AUTOSCALER_SCALE_DOWN_DELAY_AFTER_DELETE (in minutes): " inp
+        #     if [[ ! $inp =~ ^[0-9]+$ || $inp < 1 ]]
+        #     then
+        #         printf "\nYou must provide a valid value.\n"
+        #     else
+        #         AUTOSCALER_SCALE_DOWN_DELAY_AFTER_DELETE="${inp}m"
+        #         break
+        #     fi
+        # done        
+        printf "AUTOSCALER_SCALE_DOWN_DELAY_AFTER_DELETE: \"$AUTOSCALER_SCALE_DOWN_DELAY_AFTER_DELETE\"\n" >> ~/workload-clusters/tmp.yaml
+        # printf "\n\n"
+        
+        AUTOSCALER_SCALE_DOWN_DELAY_AFTER_FAILURE="3m"
+        # while true; do
+        #     read -p "AUTOSCALER_SCALE_DOWN_DELAY_AFTER_FAILURE (in minutes): " inp
+        #     if [[ ! $inp =~ ^[0-9]+$ || $inp < 1 ]]
+        #     then
+        #         printf "\nYou must provide a valid value.\n"
+        #     else
+        #         AUTOSCALER_SCALE_DOWN_DELAY_AFTER_FAILURE="${inp}m"
+        #         break
+        #     fi
+        # done
+        printf "AUTOSCALER_SCALE_DOWN_DELAY_AFTER_FAILURE: \"$AUTOSCALER_SCALE_DOWN_DELAY_AFTER_FAILURE\"\n" >> ~/workload-clusters/tmp.yaml
+        # printf "\n\n"
+        
+        AUTOSCALER_SCALE_DOWN_UNNEEDED_TIME="10m"
+        # while true; do
+        #     read -p "AUTOSCALER_SCALE_DOWN_UNNEEDED_TIME (in minutes): " inp
+        #     if [[ ! $inp =~ ^[0-9]+$ || $inp < 1 ]]
+        #     then
+        #         printf "\nYou must provide a valid value.\n"
+        #     else
+        #         AUTOSCALER_SCALE_DOWN_UNNEEDED_TIME="${inp}m"
+        #         break
+        #     fi
+        # done
+        printf "AUTOSCALER_SCALE_DOWN_UNNEEDED_TIME: \"$AUTOSCALER_SCALE_DOWN_UNNEEDED_TIME\"\n" >> ~/workload-clusters/tmp.yaml
+        # printf "\n\n"
     else 
         printf "ENABLE_AUTOSCALER: false\n" >> ~/workload-clusters/tmp.yaml
     fi

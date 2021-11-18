@@ -355,7 +355,7 @@ then
         fi
         printf "==>DONE\n"
         printf "\n\n================\n"
-        printf "in order to use kubectl for $CLUSTER_NAME you must run '~/binaries/tanzu_connect.sh -n $CLUSTER_NAME' to establish tunnel for its endpoint $serverurl"
+        printf "in order to use kubectl for $CLUSTER_NAME you must run '~/binaries/tkgconnect.sh -n $CLUSTER_NAME' to establish tunnel for its endpoint $serverurl"
         printf "\n================\n\n"
     fi
 
