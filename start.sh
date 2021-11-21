@@ -18,7 +18,7 @@ fi
 
 isexist=$(ls Dockerfile)
 isexist2=$(ls binaries/Dockerfile)
-if [[ -z $isexist || -z $isexist2 ]]
+if [[ -z $isexist || -z $isexist2 || -n $forcebuild ]]
 then
     numberoftarfound=$(find binaries/*tar* -type f -printf "." | wc -c)
     if [[ $numberoftarfound == 1 ]]

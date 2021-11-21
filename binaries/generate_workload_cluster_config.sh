@@ -370,7 +370,7 @@ then
 
     if [[ $AVI_CONTROL_PLANE_HA_PROVIDER == 'false' ]]
     then
-        printf "\nEnter the IP address of this cluster's endpoint\n"
+        printf "\nEnter the IP address of this vcsa endpoint\n"
         while true; do
             read -p "VSPHERE_CONTROL_PLANE_ENDPOINT: " inp
             if [[ -z $inp || ! $inp =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]
