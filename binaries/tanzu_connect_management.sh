@@ -186,7 +186,7 @@ then
         sleep 1
         if [[ -z $AUTH_ENPOINT ]]
         then
-            printf "\nNO AUTH_ENDPOINT given.\nLooking for kubeconfig...\n"
+            printf "\nNO AUTH_ENDPOINT given.\nLooking for kubeconfig in ~/.kube-tkg/config...\n"
             sleep 1
             kubeconfigfile=/root/.kube-tkg/config
             isexist=$(ls $kubeconfigfile)
