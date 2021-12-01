@@ -1,20 +1,24 @@
 # tkgonvsphere
 
-This is a bootstrap docker for using tkg on vsphere (For vSphere with tanzu use ). 
+***This repo is a part of Merlin initiative (https://github.com/alinahid477/merlin)***
 
-This repo is a part of Merlin initiative (https://github.com/alinahid477/merlin)
+<img src="images/logo.png" alt="Tanzu Kubernetes Grid Wizard (for TKGm on vsphere)" width=200 height=210/>
+
+**The aim is to simplify and quick start with TKGm.**
+
+The official documentation of Tanzu Kubernetes Grid (https://docs.vmware.com/en/VMware-Tanzu-Kubernetes-Grid/1.4/vmware-tanzu-kubernetes-grid-14/GUID-index.html) contains a detailed way of provisioning management and workload clusters which requires several plugins installed lots for file manipulations and files may conflict if they are not organised properly.
+
+This docker container is a bootstrapped way for achieving the same but a lot simpler. eg: You don't need to install anything on your host machine. Infact, you dont need to install anything. This bootstrapped docker takes care of all the installation prerequisits. It also helps with organising the files location (eg: Per management cluster and all of its workload cluster you can have one instance of this docker.)
+
+The bootstrap environment (once built and run using ./start.sh or start.bat) comes with the below pre-installed binaries and some handy wizards to create management and workload clusters
 
 
-Once built and run (using ./start.sh or start.bat), it creates a bootstrap docker containing:
 - kubectl
 - Tanzu CLI
 - **Tanzu Wizards**
     - *tkginstall* -->  lets you deploy TKG management cluster.
     - *tkgworkload* -->  Wizard like command line UI that helps/simplifies the generation of config file for workload cluster and uses tanzu cli to deploy it.
     - *tkgconnect* --> used to connect existing cluster under tanzu
-
-
-
 
 # Prequisites
 
