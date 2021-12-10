@@ -138,7 +138,7 @@ cd ~
 source ~/binaries/tanzu_connect_management.sh
 
 printf "\n\n\nYour available wizards are:\n"
-echo -e "\t~/binaries/tkginstall.sh"
+echo -e "\t~/binaries/tkginstall.sh --help"
 echo -e "\t~/binaries/tkgworkloadwizard.sh --help"
 echo -e "\t~/binaries/tkgconnect.sh --help"
 
