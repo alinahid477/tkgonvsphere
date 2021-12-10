@@ -33,6 +33,10 @@ rename .env.sample to .env file. `mv .env.sample .env`
 - **AUTH_ENDPOINT**=leave empty
 - **TUNNEL_AUTH_ENDPOINT_THROUGH_BASTION**=NO
 
+## id_rsa file (optional)
+
+If using bastion host then you must place the file named "id_rsa" (must be called id_rsa) in the .ssh directory.
+
 ## Tanzu Bundle
 
 ***Place the Tanzu bundle tar file in binaries directory (only 1 of the below).***
