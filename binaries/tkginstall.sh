@@ -24,6 +24,26 @@ returnOrexit()
 }
 
 
+helpFunction()
+{
+    printf "\nNo parameter to pass.\nThis is a wizard based installation.\n"
+    printf "\tThe wizard will take care of few of the installation pre-requisites through asking for some basic input. Just follow the prompt.\n"
+    printf "\tOnce the prerequisites conditions are staisfied the wizard will then proceed on launching tkg installation UI.\n"
+    printf "\tWhen using bastion host the wizard will connect to bastion host and check for the below prequisites:\n"
+    printf "\t\t- Bastion host must have docker engine (docker ce or docker ee) installed. (if you do not have it installed please do so now)\n"
+    printf "\t\t- Bastion host must have php installed. (if you do not have it installed please do so now).\n"
+    exit 1 # Exit script after printing help
+}
+
+
+while getopts "h:" opt
+do
+    case $opt in
+        h ) helpFunction ;;
+        ? ) helpFunction ;; # Print helpFunction in case parameter is non-existent
+    esac
+done
+
 unset TKG_ADMIN_EMAIL
 
 export $(cat /root/.env | xargs)
