@@ -35,11 +35,14 @@ rename .env.sample to .env file. `mv .env.sample .env`
 
 ## Tanzu Bundle
 
-***Place the Tanzu bundle tar file in binaries directory.***
+***Place the Tanzu bundle tar file in binaries directory (only 1 of the below).***
 
 - **Tanzu Community Edition**: 
     - Download from here --> https://tanzucommunityedition.io/download/. 
     - Download the linux version.
+
+**OR**
+
 - **Tanzu enterprise edition**: Download from here
     - Login into https://my.vmware.com
     - Download cli from here: https://my.vmware.com/en/web/vmware/downloads/info/slug/infrastructure_operations_management/vmware_tanzu_kubernetes_grid/1_x
