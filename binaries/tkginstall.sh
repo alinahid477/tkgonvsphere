@@ -32,6 +32,7 @@ helpFunction()
     printf "\tWhen using bastion host the wizard will connect to bastion host and check for the below prequisites:\n"
     printf "\t\t- Bastion host must have docker engine (docker ce or docker ee) installed. (if you do not have it installed please do so now)\n"
     printf "\t\t- Bastion host must have php installed. (if you do not have it installed please do so now).\n"
+    printf "\n\n"
     exit 1 # Exit script after printing help
 }
 
