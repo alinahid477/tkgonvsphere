@@ -249,10 +249,10 @@ while [[ $dobreak == 'n' && $count -lt 30 ]]; do
         if [[ $containerdeleted == 'n' ]]
         then
             printf "Checking bootstrap cluster uploaded..."
-            dockers=$(docker ps --format "{{.Names}}" || printf "error")
+            dockers=$(docker ps --format "{{.Image}}" || printf "error")
             if [[ -n $dockers && $dockers != "error" ]]
             then
-                isexist=$(echo $dockers | grep "projects.registry.vmware.com/tkg/kind/node")
+                isexist=$(printf "$dockers" | grep "projects.registry.vmware.com/tkg/kind/node")
             else
                 isexist='no'
             fi
