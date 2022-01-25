@@ -41,9 +41,11 @@ install_tanzu_plugin()
         cd /tmp/tanzu/cli/core
         versionfolder=$(ls | grep v)
         cd $versionfolder
-        install core/$versionfolder/tanzu-core-linux_amd64 /usr/local/bin/tanzu
+        install /tmp/tanzu/cli/core/$versionfolder/tanzu-core-linux_amd64 /usr/local/bin/tanzu
         tanzu plugin install --local /tmp/tanzu/cli all
     fi
+
+    cd ~
 }
 
 

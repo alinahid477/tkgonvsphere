@@ -16,8 +16,8 @@ if "%name%" == "forcebuild" (
 )
 
 if "%name%" == "" (
-    echo "assuming default name is: tkgonvsphere"
-    set name="tkgonvsphere"
+    echo "assuming default name is: merlin-tkgonvsphere"
+    set name="merlin-tkgonvsphere"
 )
 
 

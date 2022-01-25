@@ -7,7 +7,7 @@ then
 fi
 if [[ -z $name ]]
 then
-    name='tkgonvsphere'
+    name='merlin-tkgonvsphere'
     printf "\nAssuming default container name: $name"
 fi
 isexists=$(docker images | grep "\<$name\>")
@@ -18,7 +18,7 @@ fi
 
 isexist=$(ls Dockerfile)
 isexist2=$(ls binaries/Dockerfile)
-if [[ -z $isexist || -z $isexist2 || -n $forcebuild ]]
+if [[ -z $isexist || -z $isexist2 ]]
 then
     numberoftarfound=$(find binaries/*tar* -type f -printf "." | wc -c)
     if [[ $numberoftarfound == 1 ]]
